@@ -2,7 +2,6 @@
 
 import re
 from dataclasses import dataclass
-from typing import Any
 
 import httpx
 import pandas as pd
@@ -10,7 +9,8 @@ import pandas as pd
 from knmidata._constants import OPENDATA_BASE_URL
 from knmidata._exceptions import KNMIError
 from knmidata._http import AsyncTransport
-from knmidata._time import TimeLike, to_iso8601
+from knmidata._time import to_iso8601
+from knmidata._typing import QueryParams, TimeLike
 
 
 @dataclass(slots=True, kw_only=True)
@@ -94,7 +94,7 @@ class AsyncCatalogClient:
         seen_tokens: set[str] = set()
 
         while True:
-            params: dict[str, Any] = {"maxKeys": max_keys}
+            params: QueryParams = {"maxKeys": max_keys}
             if next_page_token:
                 params["nextPageToken"] = next_page_token
             if sorting:

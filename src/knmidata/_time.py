@@ -1,12 +1,10 @@
 """Normalization of user-supplied time arguments to ISO-8601 UTC strings."""
 
-from datetime import date, datetime
-from typing import TypeAlias
-
 import pandas as pd
 
-TimeLike: TypeAlias = str | pd.Timestamp | datetime | date
-"""Accepted time argument: ISO-8601 string, pandas Timestamp, datetime, or date."""
+from knmidata._typing import TimeLike
+
+__all__ = ["TimeLike", "to_iso8601"]
 
 
 def to_iso8601(value: TimeLike) -> str:

@@ -2,7 +2,6 @@
 
 import os
 import re
-from collections.abc import Generator
 from dataclasses import dataclass
 from functools import lru_cache
 from logging import getLogger
@@ -12,6 +11,7 @@ import httpx
 
 from knmidata._constants import ANONYMOUS_KEY_DOCS_URL
 from knmidata._exceptions import KNMIAuthError
+from knmidata._typing import AuthFlow
 
 logger = getLogger(__name__)
 
@@ -65,9 +65,7 @@ def get_anonymous_opendata_api_key() -> str:
 class Authenticator(Protocol):
     """Protocol defining how credentials attach to HTTP requests."""
 
-    def auth_flow(
-        self, request: httpx.Request
-    ) -> Generator[httpx.Request, httpx.Response, None]:
+    def auth_flow(self, request: httpx.Request) -> AuthFlow:
         """Apply authentication headers to the outgoing request."""
         ...
 
@@ -75,9 +73,7 @@ class Authenticator(Protocol):
 class NoAuth(httpx.Auth):
     """Strategy for unauthenticated public endpoints."""
 
-    def auth_flow(
-        self, request: httpx.Request
-    ) -> Generator[httpx.Request, httpx.Response, None]:
+    def auth_flow(self, request: httpx.Request) -> AuthFlow:
         """Pass the request through without modifying headers."""
         yield request
 
@@ -100,9 +96,7 @@ class APIKeyAuth(httpx.Auth):
     api_key: str
     header_name: str = "Authorization"
 
-    def auth_flow(
-        self, request: httpx.Request
-    ) -> Generator[httpx.Request, httpx.Response, None]:
+    def auth_flow(self, request: httpx.Request) -> AuthFlow:
         """Inject the raw API key into the specified header."""
         request.headers[self.header_name] = self.api_key
         yield request

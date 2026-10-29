@@ -9,7 +9,17 @@ from knmidata._exceptions import (
     KNMIHTTPError,
     NoFilesFoundError,
 )
-from knmidata._time import TimeLike
+from knmidata._typing import (
+    BBox,
+    CombineMethod,
+    Coords,
+    EDRDatetime,
+    FilePaths,
+    OutputFormat,
+    PathLike,
+    TimeLike,
+    ZLevel,
+)
 from knmidata._version import __version__, show_versions
 from knmidata.client import AsyncKNMIClient, KNMIClient, open_dataset
 
@@ -18,13 +28,21 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 __all__ = [
     "APIKeyAuth",
     "AsyncKNMIClient",
+    "BBox",
+    "CombineMethod",
+    "Coords",
+    "EDRDatetime",
+    "FilePaths",
     "KNMIAuthError",
     "KNMIClient",
     "KNMIError",
     "KNMIHTTPError",
     "NoAuth",
     "NoFilesFoundError",
+    "OutputFormat",
+    "PathLike",
     "TimeLike",
+    "ZLevel",
     "__version__",
     "open_dataset",
     "resolve_edr_auth",

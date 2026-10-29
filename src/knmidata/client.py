@@ -4,21 +4,18 @@ import asyncio
 import inspect
 import tempfile
 import threading
-from collections.abc import Callable, Coroutine
-from pathlib import Path
-from typing import Any, Self, TypeVar
+from collections.abc import Coroutine
+from typing import Any, Self
 
 import xarray as xr
 
 from knmidata._auth import resolve_edr_auth, resolve_open_data_auth
 from knmidata._exceptions import NoFilesFoundError
 from knmidata._http import AsyncTransport
-from knmidata._time import TimeLike
+from knmidata._typing import PathLike, RunCoroutine, T, TimeLike
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.opendata.catalog import AsyncCatalogClient
 from knmidata.opendata.download import AsyncFileDownloader, files_to_dataset
-
-T = TypeVar("T")
 
 
 class AsyncKNMIClient:
@@ -93,7 +90,7 @@ class AsyncKNMIClient:
         dataset_version: str,
         start_time: TimeLike | None = None,
         end_time: TimeLike | None = None,
-        cache_dir: Path | str | None = None,
+        cache_dir: PathLike | None = None,
         file_pattern: str | None = None,
         max_files: int | None = None,
         **open_dataset_kwargs: Any,
@@ -111,7 +108,7 @@ class AsyncKNMIClient:
             datetime, or date; naive values are assumed UTC).
         end_time : str | None, default=None
             End timestamp (TimeLike, see start_time).
-        cache_dir : Path | str | None, default=None
+        cache_dir : PathLike | None, default=None
             Local folder where downloaded NetCDF/HDF5 files are preserved and the
             dataset is opened lazily. If None, files are downloaded to a temporary
             directory, loaded into memory, and removed again.
@@ -186,13 +183,13 @@ class _SyncFacade:
 
     Parameters
     ----------
-    run : Callable[[Coroutine[Any, Any, T]], T]
+    run : RunCoroutine[T]
         Scheduler that runs a coroutine on the background loop and returns its result.
     target : Any
         The async client to wrap.
     """
 
-    def __init__(self, run: Callable[[Coroutine[Any, Any, T]], T], target: Any) -> None:
+    def __init__(self, run: RunCoroutine[T], target: Any) -> None:
         self._run = run
         self._target = target
 
@@ -239,7 +236,7 @@ class KNMIClient:
         dataset_version: str,
         start_time: TimeLike | None = None,
         end_time: TimeLike | None = None,
-        cache_dir: Path | str | None = None,
+        cache_dir: PathLike | None = None,
         file_pattern: str | None = None,
         max_files: int | None = None,
         **open_dataset_kwargs: Any,
@@ -290,7 +287,7 @@ def open_dataset(
     start_time: TimeLike | None = None,
     end_time: TimeLike | None = None,
     api_key: str | None = None,
-    cache_dir: Path | str | None = None,
+    cache_dir: PathLike | None = None,
     file_pattern: str | None = None,
     max_files: int | None = None,
     **open_dataset_kwargs: Any,
@@ -311,7 +308,7 @@ def open_dataset(
     api_key : str | None, default=None
         Optional KNMI Open Data API key. Falls back to environment variables and
         the public anonymous key if omitted.
-    cache_dir : Path | str | None, default=None
+    cache_dir : PathLike | None, default=None
         Directory to store downloaded files. If None, files are removed after
         the dataset is loaded into memory.
     file_pattern : str | None, default=None

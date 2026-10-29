@@ -5,7 +5,7 @@ import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, cast
 
 import httpx
 import xarray as xr
@@ -13,6 +13,7 @@ import xarray as xr
 from knmidata._constants import OPENDATA_BASE_URL
 from knmidata._exceptions import KNMIError
 from knmidata._http import AsyncTransport
+from knmidata._typing import CombineMethod, FilePaths, PathLike
 
 
 @dataclass(slots=True, kw_only=True)
@@ -133,7 +134,7 @@ class AsyncFileDownloader:
         dataset_name: str,
         dataset_version: str,
         filenames: list[str],
-        destination_dir: Path | str | None = None,
+        destination_dir: PathLike | None = None,
     ) -> list[Path]:
         """Download multiple files concurrently.
 
@@ -145,7 +146,7 @@ class AsyncFileDownloader:
             Dataset version identifier.
         filenames : list[str]
             List of filenames to download.
-        destination_dir : Path | str | None, default=None
+        destination_dir : PathLike | None, default=None
             Directory to save files into. Uses a temporary directory if None.
 
         Returns
@@ -186,9 +187,9 @@ class AsyncFileDownloader:
 
 
 def files_to_dataset(
-    file_paths: list[Path] | list[str],
+    file_paths: FilePaths,
     engine: str = "h5netcdf",
-    combine: Literal["by_coords", "nested", "no_conflicts"] = "by_coords",
+    combine: CombineMethod = "by_coords",
     concat_dim: str | None = None,
     **open_dataset_kwargs: Any,
 ) -> xr.Dataset:
@@ -199,7 +200,7 @@ def files_to_dataset(
 
     Parameters
     ----------
-    file_paths : list[Path] | list[str]
+    file_paths : FilePaths
         Paths to the downloaded NetCDF files.
     engine : str, default="h5netcdf"
         Xarray backend engine.
