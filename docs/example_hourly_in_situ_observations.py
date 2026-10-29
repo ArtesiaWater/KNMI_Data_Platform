@@ -147,7 +147,10 @@ print(f"knmidata {knmidata.__version__}")
 import os
 
 # Load keys from the gitignored .env file (see docs/.env.example).
-# The key itself never appears in this notebook.
+# The key itself never appears in this notebook. On GitHub Actions, skip the
+# .env file: store the key as a repository *secret* and expose it to the
+# workflow as an env var (see .github/workflows/notebooks.yaml) — GitHub
+# masks secret values in logs.
 try:
     from dotenv import load_dotenv
 
@@ -159,7 +162,13 @@ except ImportError:
 print("KNMI_API_KEY set:", bool(os.environ.get("KNMI_API_KEY")))
 print("KNMI_EDR_KEY set:", bool(os.environ.get("KNMI_EDR_KEY")))
 
-client = knmidata.KNMIClient()  # keys are resolved from the environment
+try:
+    client = knmidata.KNMIClient()  # keys are resolved from the environment
+    client_ok = True
+except knmidata.KNMIAuthError as exc:
+    client = None
+    client_ok = False
+    print(f"Could not create a client (no usable key?): {exc}")
 
 # %% [markdown]
 # ## 1. Open Data API — list and download whole files
@@ -179,15 +188,21 @@ client = knmidata.KNMIClient()  # keys are resolved from the environment
 #    (`combine_by_coords` over the time dimension).
 
 # %%
-files = client.catalog.list_files(
-    DATASET_NAME,
-    DATASET_VERSION,
-    start_time=START,
-    end_time=END,
-)
-print(f"{len(files)} files between {START} and {END}, first 5:")
-for f in files[:5]:
-    print("  " + f)
+if client_ok:
+    try:
+        files = client.catalog.list_files(
+            DATASET_NAME,
+            DATASET_VERSION,
+            start_time=START,
+            end_time=END,
+        )
+    except knmidata.KNMIHTTPError as exc:
+        # e.g. HTTP 429 when the shared anonymous key is rate-limited
+        print(f"Listing files failed: {exc}")
+        files = []
+    print(f"{len(files)} files between {START} and {END}, first 5:")
+    for f in files[:5]:
+        print("  " + f)
 
 # %% [markdown]
 # Now download just the first two files of that period and open them as a
@@ -198,20 +213,21 @@ for f in files[:5]:
 # sent — passing `pd.Timestamp` objects is fine.
 
 # %%
-try:
-    ds = client.open_dataset(
-        DATASET_NAME,
-        DATASET_VERSION,
-        start_time=START,
-        end_time=END,
-        max_files=2,  # remove this to download the whole week
-        cache_dir=CACHE_DIR,
-    )
-except knmidata.KNMIHTTPError as exc:
-    # e.g. HTTP 429 when the shared anonymous key is rate-limited:
-    # register for your own key (see above) and pass api_key="...".
-    print(f"Open Data request failed: {exc}")
-    ds = None
+ds = None
+if client_ok:
+    try:
+        ds = client.open_dataset(
+            DATASET_NAME,
+            DATASET_VERSION,
+            start_time=START,
+            end_time=END,
+            max_files=2,  # remove this to download the whole week
+            cache_dir=CACHE_DIR,
+        )
+    except knmidata.KNMIHTTPError as exc:
+        # e.g. HTTP 429 when the shared anonymous key is rate-limited:
+        # register for your own key (see above) and pass api_key="...".
+        print(f"Open Data request failed: {exc}")
 
 if ds is not None:
     print(f"\nDownloaded files are cached in: {CACHE_DIR.resolve()}")
@@ -335,5 +351,6 @@ if edr_available:
 #   plot, or write to disk.
 
 # %%
-client.close()
+if client_ok:
+    client.close()
 print("\nDone. Client closed.")

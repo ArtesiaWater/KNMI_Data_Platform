@@ -132,3 +132,5 @@ uv run pytest            # tests with coverage
 uv run ruff check        # lint
 uv run ty check src      # type check
 ```
+
+CI also executes the `docs/example_*.py` notebooks (via jupytext/nbclient) with API keys taken from repository secrets — see `.github/workflows/notebooks.yaml`. Add secrets named `KNMI_API_KEY` / `KNMI_EDR_KEY` under Settings > Secrets and variables > Actions.

@@ -1,0 +1,64 @@
+name: Notebooks
+
+# Executes the docs/example_*.py notebooks (percent format) as real notebooks.
+# API keys come from repository secrets (Settings > Secrets and variables >
+# Actions, e.g. KNMI_API_KEY and KNMI_EDR_KEY); GitHub masks secret values in
+# logs and knmidata never prints them. On forks (no secrets) the examples
+# fall back to the anonymous Open Data key and skip the EDR section, so the
+# workflow still passes.
+on:
+  push:
+    paths:
+      - "docs/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/notebooks.yaml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/notebooks.yaml"
+  workflow_dispatch:
+
+jobs:
+  execute-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up uv with Python 3.13
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Install package and notebook tooling
+        run: |
+          uv venv
+          uv pip install -e ".[testing,dotenv,notebooks]"
+
+      - name: Execute example notebooks
+        env:
+          KNMI_API_KEY: ${{ secrets.KNMI_API_KEY }}
+          KNMI_EDR_KEY: ${{ secrets.KNMI_EDR_KEY }}
+        run: |
+          mkdir -p /tmp/executed
+          status=0
+          for f in docs/example_*.py; do
+            name=$(basename "$f" .py)
+            echo "::group::Executing $f as a notebook"
+            jupytext --to ipynb --execute --output "/tmp/executed/$name.ipynb" "$f" || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: Upload executed notebooks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: executed-notebooks
+          path: /tmp/executed/*.ipynb
+          if-no-files-found: ignore
