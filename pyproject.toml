@@ -34,7 +34,7 @@ testing = ["pytest", "pytest-asyncio", "pytest-cov", "respx", "ruff", "ty"]
 dev = ["knmidata[testing]", "pre-commit", "tox-uv>=1.0"]
 
 [tool.uv.build-backend]
-source-include = ["tests/**"]
+source-include = ["tests/**", "docs/**"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
