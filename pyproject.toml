@@ -43,10 +43,8 @@ classifiers = [
 dependencies = ["httpx>=0.27.0", "xarray>=2024.1.0", "h5netcdf>=1.3.0"]
 
 [dependency-groups]
-ruff = ["ruff"]
-tests = ["pytest", "pytest-asyncio", "pytest-cov", "respx"]
-typety = ["ty"]
-dev = ["knmidata[ruff,tests,typety]", "pre-commit", "tox-uv>=1.0"]
+testing = ["pytest", "pytest-asyncio", "pytest-cov", "respx", "ruff", "ty"]
+dev = ["knmidata[testing]", "pre-commit", "tox-uv>=1.0"]
 
 [tool.uv.build-backend]
 source-include = ["tests/**"]
@@ -72,17 +70,17 @@ env_list = ["py311", "py315", "ruff", "typety"]
 
 [tool.tox.env_run_base]
 description = "run unit tests"
-extras = ["tests"]
+extras = ["testing"]
 commands = [["pytest", "tests"]]
 
 [tool.tox.env.typety]
 description = "run type checks with ty"
-extras = ["tests"]
+extras = ["testing"]
 commands = [["ty", "check", "src"]]
 
 [tool.tox.env.ruff]
 description = "run format and lint checks with ruff"
-extras = ["ruff"]
+extras = ["testing"]
 commands = [
     [
         "ruff",
