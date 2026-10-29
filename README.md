@@ -1,2 +1,3 @@
 # KNMI_Data_Platform
-Lightweight (asynchronous) Python client for retrieving observational and gridded meteorological data from the KNMI Data Platform (KDP).
+
+`knmidata` is a lightweight Python client designed to fetch observational and gridded meteorological data from the [KNMI Data Platform](https://dataplatform.knmi.nl/) directly into standard `xarray.Dataset` objects.
