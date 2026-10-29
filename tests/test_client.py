@@ -114,6 +114,48 @@ def test_sync_client_can_be_called_repeatedly(netcdf_bytes):
     assert ds2["temp"].values.tolist() == [1.0]
 
 
+def test_sync_catalog_and_downloader_facades(netcdf_bytes, tmp_path):
+    with respx.mock(assert_all_called=False) as router:
+        router.get(FILES_URL).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "isTruncated": False,
+                    "files": [{"filename": "f1.nc"}],
+                    "resultCount": 1,
+                    "maxResults": 1000,
+                    "startAfterFilename": "",
+                    "nextPageToken": "",
+                },
+            )
+        )
+        url_endpoint = f"{FILES_URL}/f1.nc/url"
+        router.get(url_endpoint).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "contentType": "application/x-netcdf",
+                    "size": str(len(netcdf_bytes)),
+                    "lastModified": "2024-01-01T00:00:00Z",
+                    "temporaryDownloadUrl": f"{S3}/f1.nc",
+                },
+            )
+        )
+        router.get(f"{S3}/f1.nc").mock(
+            return_value=httpx.Response(200, content=netcdf_bytes)
+        )
+        with knmidata.KNMIClient(api_key="key") as client:
+            files = client.catalog.list_files("ds", "1.0")
+            assert files == ["f1.nc"]
+            info = client.downloader.get_download_info("ds", "1.0", "f1.nc")
+            assert info.url == f"{S3}/f1.nc"
+            paths = client.downloader.download_files(
+                "ds", "1.0", files, destination_dir=tmp_path / "out"
+            )
+            assert (tmp_path / "out" / "f1.nc").exists()
+            assert paths[0].name == "f1.nc"
+
+
 def test_sync_edr_facade(netcdf_bytes):
     from conftest import coveragejson_payload
 

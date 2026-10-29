@@ -259,6 +259,16 @@ class KNMIClient:
         )
 
     @property
+    def catalog(self) -> _SyncFacade:
+        """Synchronous facade for the Open Data catalog client."""
+        return _SyncFacade(self._run, self._async_client.catalog)
+
+    @property
+    def downloader(self) -> _SyncFacade:
+        """Synchronous facade for the Open Data file downloader."""
+        return _SyncFacade(self._run, self._async_client.downloader)
+
+    @property
     def edr(self) -> _SyncFacade:
         """Synchronous facade for the EDR client."""
         return _SyncFacade(self._run, self._async_client.edr)

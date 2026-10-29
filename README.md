@@ -107,10 +107,11 @@ with knmidata.KNMIClient() as client:
 
 ## Examples
 
-See [docs/example_hourly_in_situ_observations.py](docs/example_hourly_in_situ_observations.py) for a runnable script that fetches the [hourly-in-situ-meteorological-observations-validated](https://dataplatform.knmi.nl/dataset/access/hourly-in-situ-meteorological-observations-validated-1-0) dataset via both the Open Data API and the EDR API:
+See [docs/example_hourly_in_situ_observations.py](docs/example_hourly_in_situ_observations.py) — a notebook-style (`# %%` cells) walkthrough that fetches the [hourly-in-situ-meteorological-observations-validated](https://dataplatform.knmi.nl/dataset/access/hourly-in-situ-meteorological-observations-validated-1-0) dataset via both the Open Data API and the EDR API, explaining how KNMI data is organized and when to use which API:
 
 ```bash
-python docs/example_hourly_in_situ_observations.py
+python docs/example_hourly_in_situ_observations.py   # as a script
+jupytext --to notebook docs/example_hourly_in_situ_observations.py  # as a notebook
 ```
 
 ## Development
