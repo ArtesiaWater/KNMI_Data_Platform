@@ -125,8 +125,8 @@ STATION_COORDS = (4.89, 52.37)
 NL_BBOX = (3.0, 50.5, 7.5, 53.7)
 
 # Time arguments accept str, pd.Timestamp, datetime, or date; naive = UTC.
-START = pd.Timestamp("2024-06-01")
-END = pd.Timestamp("2024-06-08")
+START = pd.Timestamp("2026-06-01")
+END = pd.Timestamp("2026-06-08")
 
 # Downloaded Open Data files are kept here (omit cache_dir to load into
 # memory only and delete the files afterwards).
@@ -154,7 +154,7 @@ import os
 try:
     from dotenv import load_dotenv
 
-    load_dotenv()
+    load_dotenv(".env.example")
 except ImportError:
     pass  # alternative: export KNMI_API_KEY / KNMI_EDR_KEY in your shell
 
@@ -163,7 +163,9 @@ print("KNMI_API_KEY set:", bool(os.environ.get("KNMI_API_KEY")))
 print("KNMI_EDR_KEY set:", bool(os.environ.get("KNMI_EDR_KEY")))
 
 try:
-    client = knmidata.KNMIClient()  # keys are resolved from the environment
+    client = knmidata.KNMIClient(
+        api_key=os.environ.get("KNMI_API_KEY"), edr_key=os.environ.get("KNMI_EDR_KEY")
+    )  # keys are resolved from the environment
     client_ok = True
 except knmidata.KNMIAuthError as exc:
     client = None
