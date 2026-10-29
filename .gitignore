@@ -95,3 +95,4 @@ tempCodeRunnerFile.py
 
 # Own files
 docs/.env.example
+*.nc
