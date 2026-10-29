@@ -1,0 +1,1 @@
+"""OpenData module for knmidata."""

@@ -1,9 +1,8 @@
 from importlib.metadata import version
-
 from platform import python_version
 
-
 __version__ = "0.0.1"
+
 
 def get_versions() -> dict[str, str]:
     return {
