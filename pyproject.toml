@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "knmidata"
-version = "0.1.0"
+version = "0.0.1"
 description = "Python client for the KNMI Data Platform with native xarray support."
 readme = "README.md"
 license = "MIT"
@@ -14,20 +14,9 @@ authors = [
     { name = "Onno Ebbens", email = "o.ebbens@artesia-water.nl" },
     { name = "Ruben Caljé", email = "r.calje@artesia-water.nl" },
 ]
-keywords = [
-    "knmi",
-    "meteorology",
-    "weather",
-    "hydrology",
-    "radar",
-    "xarray",
-    "edr",
-    "open-data",
-]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -38,11 +27,9 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Hydrology",
     "Typing :: Typed",
 ]
-
-# Core runtime dependencies
 dependencies = ["httpx>=0.27.0", "xarray>=2024.1.0", "h5netcdf>=1.3.0"]
 
-[dependency-groups]
+[project.optional-dependencies]
 testing = ["pytest", "pytest-asyncio", "pytest-cov", "respx", "ruff", "ty"]
 dev = ["knmidata[testing]", "pre-commit", "tox-uv>=1.0"]
 
