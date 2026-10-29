@@ -1,16 +1,23 @@
 """Composition roots and client facades for asynchronous and synchronous workflows."""
 
 import asyncio
+import inspect
+import tempfile
+import threading
+from collections.abc import Callable, Coroutine
 from pathlib import Path
-from typing import Any, Self
+from typing import Any, Self, TypeVar
 
 import xarray as xr
 
 from knmidata._auth import resolve_edr_auth, resolve_open_data_auth
+from knmidata._exceptions import NoFilesFoundError
 from knmidata._http import AsyncTransport
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.opendata.catalog import AsyncCatalogClient
-from knmidata.opendata.download import AsyncFileDownloader
+from knmidata.opendata.download import AsyncFileDownloader, files_to_dataset
+
+T = TypeVar("T")
 
 
 class AsyncKNMIClient:
@@ -19,13 +26,17 @@ class AsyncKNMIClient:
     Parameters
     ----------
     api_key : str | None, default=None
-        General API key used for Open Data (or shared application key).
+        API key used for the Open Data API. Falls back to the KNMI_OPEN_DATA_KEY
+        and KNMI_API_KEY environment variables, then to the public anonymous key.
     edr_key : str | None, default=None
-        Dedicated EDR key if distinct from the main API key.
+        Dedicated EDR API key if distinct from the main API key. EDR keys are not
+        interchangeable with Open Data keys. Falls back to KNMI_EDR_KEY / KNMI_API_KEY.
     max_concurrency : int, default=15
-        Maximum concurrent network connections allowed.
+        Maximum concurrent network requests.
     timeout : float, default=60.0
-        Network timeout in seconds.
+        Read timeout in seconds.
+    max_retries : int, default=3
+        Retries for transient failures (429/5xx/transport errors).
     """
 
     def __init__(
@@ -34,9 +45,10 @@ class AsyncKNMIClient:
         edr_key: str | None = None,
         max_concurrency: int = 15,
         timeout: float = 60.0,
+        max_retries: int = 3,
     ) -> None:
         self._transport = AsyncTransport(
-            max_concurrency=max_concurrency, timeout=timeout
+            max_concurrency=max_concurrency, timeout=timeout, max_retries=max_retries
         )
 
         open_data_auth = resolve_open_data_auth(api_key)
@@ -50,6 +62,21 @@ class AsyncKNMIClient:
         # Lazy-resolve EDR auth so clients using only Open Data don't error if no EDR key is set
         self._edr_key = edr_key or api_key
         self._edr_client: AsyncEDRClient | None = None
+
+    @property
+    def transport(self) -> AsyncTransport:
+        """The shared HTTP transport."""
+        return self._transport
+
+    @property
+    def catalog(self) -> AsyncCatalogClient:
+        """The Open Data catalog client."""
+        return self._catalog
+
+    @property
+    def downloader(self) -> AsyncFileDownloader:
+        """The Open Data file downloader."""
+        return self._downloader
 
     @property
     def edr(self) -> AsyncEDRClient:
@@ -66,7 +93,9 @@ class AsyncKNMIClient:
         start_time: str | None = None,
         end_time: str | None = None,
         cache_dir: Path | str | None = None,
-        **open_mfdataset_kwargs: Any,
+        file_pattern: str | None = None,
+        max_files: int | None = None,
+        **open_dataset_kwargs: Any,
     ) -> xr.Dataset:
         """Download matching archive files via Open Data and assemble an xarray.Dataset.
 
@@ -77,39 +106,65 @@ class AsyncKNMIClient:
         dataset_version : str
             Dataset version identifier.
         start_time : str | None, default=None
-            ISO-8601 start date/time.
+            ISO-8601 start timestamp (e.g. '2024-01-01T00:00:00Z').
         end_time : str | None, default=None
-            ISO-8601 end date/time.
+            ISO-8601 end timestamp.
         cache_dir : Path | str | None, default=None
-            Local folder where downloaded NetCDF/HDF5 files will be preserved.
-        **open_mfdataset_kwargs : Any
-            Additional keyword arguments passed to xarray.open_mfdataset.
+            Local folder where downloaded NetCDF/HDF5 files are preserved and the
+            dataset is opened lazily. If None, files are downloaded to a temporary
+            directory, loaded into memory, and removed again.
+        file_pattern : str | None, default=None
+            Optional regular expression to keep only matching file names.
+        max_files : int | None, default=None
+            Maximum number of files to download (after listing, ascending order).
+        **open_dataset_kwargs : Any
+            Additional keyword arguments passed to `xarray.open_dataset` per file.
 
         Returns
         -------
         xr.Dataset
             Combined multidimensional dataset.
+
+        Raises
+        ------
+        NoFilesFoundError
+            If the query matches no files.
         """
         files = await self._catalog.list_files(
             dataset_name=dataset_name,
             dataset_version=dataset_version,
             start_time=start_time,
             end_time=end_time,
+            file_pattern=file_pattern,
         )
+        if max_files is not None:
+            files = files[:max_files]
         if not files:
-            raise FileNotFoundError(
+            raise NoFilesFoundError(
                 f"No files found for dataset '{dataset_name}' (v{dataset_version}) "
                 f"between {start_time} and {end_time}."
             )
 
-        downloaded_paths = await self._downloader.download_files(
+        if cache_dir is None:
+            with tempfile.TemporaryDirectory(prefix="knmi_") as tmp:
+                paths = await self._downloader.download_files(
+                    dataset_name=dataset_name,
+                    dataset_version=dataset_version,
+                    filenames=files,
+                    destination_dir=tmp,
+                )
+                dataset = files_to_dataset(paths, **open_dataset_kwargs)
+                dataset.load()
+                dataset.close()
+                return dataset
+
+        paths = await self._downloader.download_files(
             dataset_name=dataset_name,
             dataset_version=dataset_version,
             filenames=files,
             destination_dir=cache_dir,
         )
-
-        return self._downloader.to_xarray(downloaded_paths, **open_mfdataset_kwargs)
+        return files_to_dataset(paths, **open_dataset_kwargs)
 
     async def aclose(self) -> None:
         """Close the underlying HTTP transport session."""
@@ -124,8 +179,38 @@ class AsyncKNMIClient:
         await self.aclose()
 
 
+class _SyncFacade:
+    """Expose the coroutine methods of an async client as blocking sync calls.
+
+    Parameters
+    ----------
+    run : Callable[[Coroutine[Any, Any, T]], T]
+        Scheduler that runs a coroutine on the background loop and returns its result.
+    target : Any
+        The async client to wrap.
+    """
+
+    def __init__(self, run: Callable[[Coroutine[Any, Any, T]], T], target: Any) -> None:
+        self._run = run
+        self._target = target
+
+    def __getattr__(self, name: str) -> Any:
+        attr = getattr(self._target, name)
+        if inspect.iscoroutinefunction(attr):
+
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
+                return self._run(attr(*args, **kwargs))
+
+            return wrapper
+        return attr
+
+
 class KNMIClient:
     """Synchronous facade wrapping AsyncKNMIClient for non-async environments.
+
+    All coroutines are executed on a dedicated background event loop in a
+    separate thread, so the client can be called repeatedly (and from inside
+    environments that already run an event loop, such as Jupyter).
 
     Parameters
     ----------
@@ -134,7 +219,17 @@ class KNMIClient:
     """
 
     def __init__(self, **kwargs: Any) -> None:
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(
+            target=self._loop.run_forever, name="knmidata-event-loop", daemon=True
+        )
+        self._thread.start()
+        self._closed = False
         self._async_client = AsyncKNMIClient(**kwargs)
+
+    def _run(self, coro: Coroutine[Any, Any, T]) -> T:
+        """Run a coroutine on the background loop and block until it completes."""
+        return asyncio.run_coroutine_threadsafe(coro, self._loop).result()
 
     def open_dataset(
         self,
@@ -143,61 +238,40 @@ class KNMIClient:
         start_time: str | None = None,
         end_time: str | None = None,
         cache_dir: Path | str | None = None,
-        **open_mfdataset_kwargs: Any,
+        file_pattern: str | None = None,
+        max_files: int | None = None,
+        **open_dataset_kwargs: Any,
     ) -> xr.Dataset:
-        """Download Open Data files and return an xarray.Dataset synchronously."""
-        return asyncio.run(
+        """Download Open Data files and return an xarray.Dataset synchronously.
+
+        See `AsyncKNMIClient.open_dataset` for parameter descriptions.
+        """
+        return self._run(
             self._async_client.open_dataset(
                 dataset_name=dataset_name,
                 dataset_version=dataset_version,
                 start_time=start_time,
                 end_time=end_time,
                 cache_dir=cache_dir,
-                **open_mfdataset_kwargs,
+                file_pattern=file_pattern,
+                max_files=max_files,
+                **open_dataset_kwargs,
             )
         )
 
-    def open_edr_position(
-        self,
-        collection: str,
-        coords: tuple[float, float],
-        datetime: str | None = None,
-        parameters: list[str] | None = None,
-        output_format: str = "CoverageJSON",
-    ) -> xr.Dataset:
-        """Query EDR position endpoint synchronously."""
-        return asyncio.run(
-            self._async_client.edr.position(
-                collection=collection,
-                coords=coords,
-                datetime=datetime,
-                parameters=parameters,
-                output_format=output_format,
-            )
-        )
-
-    def open_edr_area(
-        self,
-        collection: str,
-        bbox: tuple[float, float, float, float],
-        datetime: str | None = None,
-        parameters: list[str] | None = None,
-        output_format: str = "CoverageJSON",
-    ) -> xr.Dataset:
-        """Query EDR area endpoint synchronously."""
-        return asyncio.run(
-            self._async_client.edr.area(
-                collection=collection,
-                bbox=bbox,
-                datetime=datetime,
-                parameters=parameters,
-                output_format=output_format,
-            )
-        )
+    @property
+    def edr(self) -> _SyncFacade:
+        """Synchronous facade for the EDR client."""
+        return _SyncFacade(self._run, self._async_client.edr)
 
     def close(self) -> None:
-        """Close the underlying connection pool synchronously."""
-        asyncio.run(self._async_client.aclose())
+        """Close the underlying connection pool and stop the background loop."""
+        if self._closed:
+            return
+        self._closed = True
+        self._run(self._async_client.aclose())
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._thread.join(timeout=10.0)
 
     def __enter__(self) -> Self:
         """Context manager entry."""
@@ -215,7 +289,9 @@ def open_dataset(
     end_time: str | None = None,
     api_key: str | None = None,
     cache_dir: Path | str | None = None,
-    **open_mfdataset_kwargs: Any,
+    file_pattern: str | None = None,
+    max_files: int | None = None,
+    **open_dataset_kwargs: Any,
 ) -> xr.Dataset:
     """One-line convenience function to synchronously download and open Open Data files.
 
@@ -230,11 +306,17 @@ def open_dataset(
     end_time : str | None, default=None
         ISO-8601 end timestamp filter.
     api_key : str | None, default=None
-        Optional KNMI API key. Falls back to public open-data key if omitted.
+        Optional KNMI Open Data API key. Falls back to environment variables and
+        the public anonymous key if omitted.
     cache_dir : Path | str | None, default=None
-        Directory to store files.
-    **open_mfdataset_kwargs : Any
-        Forwarded to `xarray.open_mfdataset`.
+        Directory to store downloaded files. If None, files are removed after
+        the dataset is loaded into memory.
+    file_pattern : str | None, default=None
+        Optional regular expression to keep only matching file names.
+    max_files : int | None, default=None
+        Maximum number of files to download.
+    **open_dataset_kwargs : Any
+        Forwarded to `xarray.open_dataset` per file.
 
     Returns
     -------
@@ -248,5 +330,7 @@ def open_dataset(
             start_time=start_time,
             end_time=end_time,
             cache_dir=cache_dir,
-            **open_mfdataset_kwargs,
+            file_pattern=file_pattern,
+            max_files=max_files,
+            **open_dataset_kwargs,
         )

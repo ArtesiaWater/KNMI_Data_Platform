@@ -1,18 +1,19 @@
 """Catalog querying and file listing for the KNMI Open Data API."""
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
+from knmidata._constants import OPENDATA_BASE_URL
+from knmidata._exceptions import KNMIError
 from knmidata._http import AsyncTransport
-
-OPENDATA_BASE_URL = "https://api.knmi.nl/open-data/v1"
 
 
 @dataclass(slots=True, kw_only=True)
 class AsyncCatalogClient:
-    """Client for querying datasets, versions, and file lists in the Open Data catalog.
+    """Client for querying file lists in the Open Data catalog.
 
     Parameters
     ----------
@@ -31,7 +32,10 @@ class AsyncCatalogClient:
         dataset_version: str,
         start_time: str | None = None,
         end_time: str | None = None,
-        max_keys: int = 500,
+        max_keys: int = 1000,
+        sorting: str | None = None,
+        order_by: str | None = None,
+        file_pattern: str | None = None,
     ) -> list[str]:
         """Fetch matching file names from the catalog, handling pagination automatically.
 
@@ -42,11 +46,24 @@ class AsyncCatalogClient:
         dataset_version : str
             Dataset version identifier (e.g., '2.0').
         start_time : str | None, default=None
-            ISO-8601 start timestamp filter if supported by the dataset.
+            ISO-8601 start timestamp filter (e.g. '2024-01-01T00:00:00Z'). Requires
+            server-side ordering by modification time, so `order_by` defaults to
+            'lastModified' when a time filter is given.
         end_time : str | None, default=None
-            ISO-8601 end timestamp filter if supported by the dataset.
-        max_keys : int, default=500
-            Number of keys to request per pagination batch.
+            ISO-8601 end timestamp filter.
+        max_keys : int, default=1000
+            Number of keys to request per pagination batch (API maximum is 1000).
+        sorting : str | None, default=None
+            'asc' or 'desc'.
+        order_by : str | None, default=None
+            Attribute to order/filter by: 'filename' (default), 'lastModified', or
+            'created'. Set to 'lastModified' (the default when `start_time` or
+            `end_time` is given) to make `begin`/`end` act as ISO-8601 timestamps;
+            with the default 'filename' ordering, `begin`/`end` are compared as
+            filename strings instead.
+        file_pattern : str | None, default=None
+            Optional regular expression applied client-side to keep only matching
+            file names.
 
         Returns
         -------
@@ -57,31 +74,44 @@ class AsyncCatalogClient:
             f"{OPENDATA_BASE_URL}/datasets/{dataset_name}/"
             f"versions/{dataset_version}/files"
         )
+        if (start_time or end_time) and order_by is None:
+            order_by = "lastModified"
+
+        pattern = re.compile(file_pattern) if file_pattern else None
         filenames: list[str] = []
         next_page_token: str | None = None
+        seen_tokens: set[str] = set()
 
         while True:
             params: dict[str, Any] = {"maxKeys": max_keys}
             if next_page_token:
                 params["nextPageToken"] = next_page_token
+            if sorting:
+                params["sorting"] = sorting
+            if order_by:
+                params["orderBy"] = order_by
             if start_time:
                 params["begin"] = start_time
             if end_time:
                 params["end"] = end_time
 
-            async with self.transport.semaphore:
-                response = await self.transport.client.get(
-                    endpoint, params=params, auth=self.auth
-                )
-                response.raise_for_status()
-                payload = response.json()
+            payload = await self.transport.get_json(
+                endpoint, auth=self.auth, params=params
+            )
 
             for item in payload.get("files", []):
-                if name := item.get("filename"):
+                name = item.get("filename")
+                if name and (pattern is None or pattern.search(name)):
                     filenames.append(name)
 
             next_page_token = payload.get("nextPageToken")
             if not next_page_token or not payload.get("isTruncated", False):
                 break
+            if next_page_token in seen_tokens:
+                raise KNMIError(
+                    f"Pagination loop detected: nextPageToken {next_page_token!r} "
+                    "was already used."
+                )
+            seen_tokens.add(next_page_token)
 
-        return filenames
+        return list(dict.fromkeys(filenames))

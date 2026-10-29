@@ -1,15 +1,16 @@
 """OGC Environmental Data Retrieval (EDR) query client."""
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 import xarray as xr
 
+from knmidata._constants import EDR_BASE_URL
 from knmidata._http import AsyncTransport
-from knmidata.edr.parsers import parse_coveragejson, parse_netcdf_bytes
+from knmidata.edr.parsers import parse_coveragejson, parse_geojson
 
-EDR_BASE_URL = "https://api.knmi.nl/edr/v1"
+OutputFormat = Literal["CoverageJSON", "GeoJSON"]
 
 
 @dataclass(slots=True, kw_only=True)
@@ -27,21 +28,104 @@ class AsyncEDRClient:
     transport: AsyncTransport
     auth: httpx.Auth
 
-    async def _execute_query(
-        self, endpoint: str, params: dict[str, Any], output_format: str
+    async def collections(self) -> dict[str, Any]:
+        """List all collections available in the EDR API.
+
+        Returns
+        -------
+        dict[str, Any]
+            Parsed JSON response of the /collections endpoint.
+        """
+        return await self.transport.get_json(
+            f"{EDR_BASE_URL}/collections", auth=self.auth
+        )
+
+    async def collection(self, collection_id: str) -> dict[str, Any]:
+        """Get metadata for a collection, including available parameters and output formats.
+
+        Parameters
+        ----------
+        collection_id : str
+            EDR collection ID (e.g. 'hourly-in-situ-meteorological-observations').
+
+        Returns
+        -------
+        dict[str, Any]
+            Parsed JSON response of the /collections/{id} endpoint.
+        """
+        return await self.transport.get_json(
+            f"{EDR_BASE_URL}/collections/{collection_id}", auth=self.auth
+        )
+
+    async def instances(self, collection_id: str) -> dict[str, Any]:
+        """List the instances of a collection.
+
+        Parameters
+        ----------
+        collection_id : str
+            EDR collection ID.
+
+        Returns
+        -------
+        dict[str, Any]
+            Parsed JSON response of the /collections/{id}/instances endpoint.
+        """
+        return await self.transport.get_json(
+            f"{EDR_BASE_URL}/collections/{collection_id}/instances", auth=self.auth
+        )
+
+    async def locations(self, collection_id: str) -> dict[str, Any]:
+        """List the measurement locations of a collection as GeoJSON.
+
+        Parameters
+        ----------
+        collection_id : str
+            EDR collection ID.
+
+        Returns
+        -------
+        dict[str, Any]
+            GeoJSON FeatureCollection.
+        """
+        return await self.transport.get_json(
+            f"{EDR_BASE_URL}/collections/{collection_id}/locations", auth=self.auth
+        )
+
+    async def location(self, collection_id: str, location_id: str) -> dict[str, Any]:
+        """Get metadata for a single location.
+
+        Parameters
+        ----------
+        collection_id : str
+            EDR collection ID.
+        location_id : str
+            Location identifier.
+
+        Returns
+        -------
+        dict[str, Any]
+            GeoJSON Feature.
+        """
+        return await self.transport.get_json(
+            f"{EDR_BASE_URL}/collections/{collection_id}/locations/{location_id}",
+            auth=self.auth,
+        )
+
+    async def _query(
+        self,
+        endpoint: str,
+        params: dict[str, Any],
+        output_format: OutputFormat,
     ) -> xr.Dataset:
-        """Dispatch query to EDR endpoint and route response to the correct parser."""
-        params["f"] = output_format
-
-        async with self.transport.semaphore:
-            response = await self.transport.client.get(
-                endpoint, params=params, auth=self.auth
-            )
-            response.raise_for_status()
-
-        if output_format.lower() == "netcdf":
-            return parse_netcdf_bytes(response.content)
-        return parse_coveragejson(response.json())
+        """Dispatch a data query to an EDR endpoint and route the response to a parser."""
+        query_params = {**params, "f": output_format}
+        response = await self.transport.request(
+            "GET", endpoint, params=query_params, auth=self.auth
+        )
+        payload = response.json()
+        if output_format == "GeoJSON":
+            return parse_geojson(payload)
+        return parse_coveragejson(payload)
 
     async def position(
         self,
@@ -49,7 +133,8 @@ class AsyncEDRClient:
         coords: tuple[float, float],
         datetime: str | None = None,
         parameters: list[str] | None = None,
-        output_format: str = "CoverageJSON",
+        output_format: OutputFormat = "CoverageJSON",
+        crs: str | None = None,
     ) -> xr.Dataset:
         """Query station or point time-series via /collections/{id}/position.
 
@@ -58,13 +143,15 @@ class AsyncEDRClient:
         collection : str
             EDR collection ID.
         coords : tuple[float, float]
-            Point coordinates (lon, lat) or (x, y).
+            Point coordinates (lon, lat).
         datetime : str | None, default=None
-            ISO-8601 interval (e.g. '2026-01-01T00:00:00Z/2026-01-02T00:00:00Z').
+            RFC 3339 datetime or interval (e.g. '2026-01-01T00:00:00Z/2026-01-02T00:00:00Z').
         parameters : list[str] | None, default=None
-            List of variable/parameter names to query.
+            List of parameter names to query (see collection metadata).
         output_format : str, default="CoverageJSON"
-            Response format: 'CoverageJSON' or 'NetCDF'.
+            Response format: 'CoverageJSON' or 'GeoJSON'.
+        crs : str | None, default=None
+            Coordinate reference system of `coords`, e.g. 'EPSG:4326'.
 
         Returns
         -------
@@ -77,8 +164,9 @@ class AsyncEDRClient:
             params["datetime"] = datetime
         if parameters:
             params["parameter-name"] = ",".join(parameters)
-
-        return await self._execute_query(endpoint, params, output_format)
+        if crs:
+            params["crs"] = crs
+        return await self._query(endpoint, params, output_format)
 
     async def area(
         self,
@@ -86,9 +174,10 @@ class AsyncEDRClient:
         bbox: tuple[float, float, float, float],
         datetime: str | None = None,
         parameters: list[str] | None = None,
-        output_format: str = "CoverageJSON",
+        output_format: OutputFormat = "CoverageJSON",
+        crs: str | None = None,
     ) -> xr.Dataset:
-        """Query spatial polygon/bounding box via /collections/{id}/area.
+        """Query a spatial bounding box via /collections/{id}/area.
 
         Parameters
         ----------
@@ -97,11 +186,13 @@ class AsyncEDRClient:
         bbox : tuple[float, float, float, float]
             Bounding box as (minx, miny, maxx, maxy).
         datetime : str | None, default=None
-            ISO-8601 datetime or interval.
+            RFC 3339 datetime or interval.
         parameters : list[str] | None, default=None
-            List of variable/parameter names to query.
+            List of parameter names to query.
         output_format : str, default="CoverageJSON"
-            Response format: 'CoverageJSON' or 'NetCDF'.
+            Response format: 'CoverageJSON' or 'GeoJSON'.
+        crs : str | None, default=None
+            Coordinate reference system of `bbox`.
 
         Returns
         -------
@@ -119,8 +210,9 @@ class AsyncEDRClient:
             params["datetime"] = datetime
         if parameters:
             params["parameter-name"] = ",".join(parameters)
-
-        return await self._execute_query(endpoint, params, output_format)
+        if crs:
+            params["crs"] = crs
+        return await self._query(endpoint, params, output_format)
 
     async def cube(
         self,
@@ -129,9 +221,10 @@ class AsyncEDRClient:
         z: str | tuple[float, float],
         datetime: str | None = None,
         parameters: list[str] | None = None,
-        output_format: str = "CoverageJSON",
+        output_format: OutputFormat = "CoverageJSON",
+        crs: str | None = None,
     ) -> xr.Dataset:
-        """Query 3D volume via /collections/{id}/cube.
+        """Query a 3D volume via /collections/{id}/cube.
 
         Parameters
         ----------
@@ -140,13 +233,15 @@ class AsyncEDRClient:
         bbox : tuple[float, float, float, float]
             Bounding box as (minx, miny, maxx, maxy).
         z : str | tuple[float, float]
-            Vertical height level or interval (e.g. '100' or (100, 500)).
+            Vertical level or interval (e.g. '100' or (100, 500)).
         datetime : str | None, default=None
-            ISO-8601 datetime or interval.
+            RFC 3339 datetime or interval.
         parameters : list[str] | None, default=None
-            List of variable/parameter names to query.
+            List of parameter names to query.
         output_format : str, default="CoverageJSON"
-            Response format: 'CoverageJSON' or 'NetCDF'.
+            Response format: 'CoverageJSON' or 'GeoJSON'.
+        crs : str | None, default=None
+            Coordinate reference system of `bbox` and `z`.
 
         Returns
         -------
@@ -164,5 +259,6 @@ class AsyncEDRClient:
             params["datetime"] = datetime
         if parameters:
             params["parameter-name"] = ",".join(parameters)
-
-        return await self._execute_query(endpoint, params, output_format)
+        if crs:
+            params["crs"] = crs
+        return await self._query(endpoint, params, output_format)
