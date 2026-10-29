@@ -13,6 +13,7 @@ import xarray as xr
 from knmidata._auth import resolve_edr_auth, resolve_open_data_auth
 from knmidata._exceptions import NoFilesFoundError
 from knmidata._http import AsyncTransport
+from knmidata._time import TimeLike
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.opendata.catalog import AsyncCatalogClient
 from knmidata.opendata.download import AsyncFileDownloader, files_to_dataset
@@ -90,8 +91,8 @@ class AsyncKNMIClient:
         self,
         dataset_name: str,
         dataset_version: str,
-        start_time: str | None = None,
-        end_time: str | None = None,
+        start_time: TimeLike | None = None,
+        end_time: TimeLike | None = None,
         cache_dir: Path | str | None = None,
         file_pattern: str | None = None,
         max_files: int | None = None,
@@ -106,9 +107,10 @@ class AsyncKNMIClient:
         dataset_version : str
             Dataset version identifier.
         start_time : str | None, default=None
-            ISO-8601 start timestamp (e.g. '2024-01-01T00:00:00Z').
+            Start timestamp (TimeLike: ISO-8601 string, pandas Timestamp,
+            datetime, or date; naive values are assumed UTC).
         end_time : str | None, default=None
-            ISO-8601 end timestamp.
+            End timestamp (TimeLike, see start_time).
         cache_dir : Path | str | None, default=None
             Local folder where downloaded NetCDF/HDF5 files are preserved and the
             dataset is opened lazily. If None, files are downloaded to a temporary
@@ -235,8 +237,8 @@ class KNMIClient:
         self,
         dataset_name: str,
         dataset_version: str,
-        start_time: str | None = None,
-        end_time: str | None = None,
+        start_time: TimeLike | None = None,
+        end_time: TimeLike | None = None,
         cache_dir: Path | str | None = None,
         file_pattern: str | None = None,
         max_files: int | None = None,
@@ -285,8 +287,8 @@ class KNMIClient:
 def open_dataset(
     dataset_name: str,
     dataset_version: str,
-    start_time: str | None = None,
-    end_time: str | None = None,
+    start_time: TimeLike | None = None,
+    end_time: TimeLike | None = None,
     api_key: str | None = None,
     cache_dir: Path | str | None = None,
     file_pattern: str | None = None,
@@ -302,9 +304,10 @@ def open_dataset(
     dataset_version : str
         Dataset version identifier.
     start_time : str | None, default=None
-        ISO-8601 start timestamp filter.
+        Start timestamp filter (TimeLike: ISO-8601 string, pandas Timestamp,
+        datetime, or date; naive values are assumed UTC).
     end_time : str | None, default=None
-        ISO-8601 end timestamp filter.
+        End timestamp filter (TimeLike, see start_time).
     api_key : str | None, default=None
         Optional KNMI Open Data API key. Falls back to environment variables and
         the public anonymous key if omitted.

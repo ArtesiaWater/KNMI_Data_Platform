@@ -8,9 +8,25 @@ import xarray as xr
 
 from knmidata._constants import EDR_BASE_URL
 from knmidata._http import AsyncTransport
+from knmidata._time import TimeLike, to_iso8601
 from knmidata.edr.parsers import parse_coveragejson, parse_geojson
 
 OutputFormat = Literal["CoverageJSON", "GeoJSON"]
+
+
+def _format_datetime(value: TimeLike | tuple[TimeLike, TimeLike]) -> str:
+    """Normalize an EDR datetime argument to an RFC 3339 string.
+
+    Interval strings (containing '/' or '..') are passed through unchanged;
+    single timestamps and (start, end) tuples are normalized to UTC ISO-8601.
+    """
+    if isinstance(value, str):
+        if "/" in value or ".." in value:
+            return value
+        return to_iso8601(value)
+    if isinstance(value, (tuple, list)):
+        return "/".join(to_iso8601(v) for v in value)
+    return to_iso8601(value)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -131,7 +147,7 @@ class AsyncEDRClient:
         self,
         collection: str,
         coords: tuple[float, float],
-        datetime: str | None = None,
+        datetime: TimeLike | tuple[TimeLike, TimeLike] | None = None,
         parameters: list[str] | None = None,
         output_format: OutputFormat = "CoverageJSON",
         crs: str | None = None,
@@ -144,8 +160,10 @@ class AsyncEDRClient:
             EDR collection ID.
         coords : tuple[float, float]
             Point coordinates (lon, lat).
-        datetime : str | None, default=None
-            RFC 3339 datetime or interval (e.g. '2026-01-01T00:00:00Z/2026-01-02T00:00:00Z').
+        datetime : TimeLike | tuple[TimeLike, TimeLike] | None, default=None
+            RFC 3339 datetime or interval, e.g. '2026-01-01T00:00:00Z/2026-01-02T00:00:00Z'.
+            Also accepts a pandas Timestamp / datetime / date, or a (start, end)
+            tuple; naive values are assumed UTC. Interval strings pass through.
         parameters : list[str] | None, default=None
             List of parameter names to query (see collection metadata).
         output_format : str, default="CoverageJSON"
@@ -160,8 +178,8 @@ class AsyncEDRClient:
         """
         endpoint = f"{EDR_BASE_URL}/collections/{collection}/position"
         params: dict[str, Any] = {"coords": f"POINT({coords[0]} {coords[1]})"}
-        if datetime:
-            params["datetime"] = datetime
+        if datetime is not None:
+            params["datetime"] = _format_datetime(datetime)
         if parameters:
             params["parameter-name"] = ",".join(parameters)
         if crs:
@@ -172,7 +190,7 @@ class AsyncEDRClient:
         self,
         collection: str,
         bbox: tuple[float, float, float, float],
-        datetime: str | None = None,
+        datetime: TimeLike | tuple[TimeLike, TimeLike] | None = None,
         parameters: list[str] | None = None,
         output_format: OutputFormat = "CoverageJSON",
         crs: str | None = None,
@@ -185,8 +203,8 @@ class AsyncEDRClient:
             EDR collection ID.
         bbox : tuple[float, float, float, float]
             Bounding box as (minx, miny, maxx, maxy).
-        datetime : str | None, default=None
-            RFC 3339 datetime or interval.
+        datetime : TimeLike | tuple[TimeLike, TimeLike] | None, default=None
+            RFC 3339 datetime or interval (see position).
         parameters : list[str] | None, default=None
             List of parameter names to query.
         output_format : str, default="CoverageJSON"
@@ -206,8 +224,8 @@ class AsyncEDRClient:
             f"{maxx} {maxy}, {minx} {maxy}, {minx} {miny}))"
         )
         params: dict[str, Any] = {"coords": wkt_poly}
-        if datetime:
-            params["datetime"] = datetime
+        if datetime is not None:
+            params["datetime"] = _format_datetime(datetime)
         if parameters:
             params["parameter-name"] = ",".join(parameters)
         if crs:
@@ -219,7 +237,7 @@ class AsyncEDRClient:
         collection: str,
         bbox: tuple[float, float, float, float],
         z: str | tuple[float, float],
-        datetime: str | None = None,
+        datetime: TimeLike | tuple[TimeLike, TimeLike] | None = None,
         parameters: list[str] | None = None,
         output_format: OutputFormat = "CoverageJSON",
         crs: str | None = None,
@@ -234,8 +252,8 @@ class AsyncEDRClient:
             Bounding box as (minx, miny, maxx, maxy).
         z : str | tuple[float, float]
             Vertical level or interval (e.g. '100' or (100, 500)).
-        datetime : str | None, default=None
-            RFC 3339 datetime or interval.
+        datetime : TimeLike | tuple[TimeLike, TimeLike] | None, default=None
+            RFC 3339 datetime or interval (see position).
         parameters : list[str] | None, default=None
             List of parameter names to query.
         output_format : str, default="CoverageJSON"

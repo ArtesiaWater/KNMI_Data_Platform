@@ -9,6 +9,7 @@ from knmidata._exceptions import (
     KNMIHTTPError,
     NoFilesFoundError,
 )
+from knmidata._time import TimeLike
 from knmidata._version import __version__, show_versions
 from knmidata.client import AsyncKNMIClient, KNMIClient, open_dataset
 
@@ -23,6 +24,7 @@ __all__ = [
     "KNMIHTTPError",
     "NoAuth",
     "NoFilesFoundError",
+    "TimeLike",
     "__version__",
     "open_dataset",
     "resolve_edr_auth",

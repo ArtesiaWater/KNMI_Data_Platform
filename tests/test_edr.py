@@ -2,6 +2,7 @@
 
 import httpx
 import numpy as np
+import pandas as pd
 import pytest
 import respx
 
@@ -217,6 +218,44 @@ async def test_cube_sends_bbox_and_z(edr):
         params = route.calls[0].request.url.params
         assert params["bbox"] == "3.0,50.5,7.5,53.7"
         assert params["z"] == "100/500"
+
+
+async def test_datetime_accepts_timestamp_and_interval(edr):
+    endpoint = f"{EDR}/collections/c1/position"
+    payload = {
+        "domain": {"axes": {"t": {"values": ["2024-01-01T00:00:00Z"]}}},
+        "parameters": {"T": {"unit": {"symbol": "C"}, "description": {"en": "t"}}},
+        "ranges": {"T": {"values": [1.0]}},
+    }
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(endpoint).mock(
+            return_value=httpx.Response(200, json=payload)
+        )
+        # single Timestamp, naive -> UTC
+        await edr.position(
+            "c1", coords=(4.89, 52.37), datetime=pd.Timestamp("2024-01-01 06:00")
+        )
+        assert route.calls[0].request.url.params["datetime"] == "2024-01-01T06:00:00Z"
+        # (start, end) tuple -> interval
+        await edr.position(
+            "c1",
+            coords=(4.89, 52.37),
+            datetime=(
+                pd.Timestamp("2024-01-01"),
+                pd.Timestamp("2024-01-02T02:00:00+02:00"),
+            ),
+        )
+        assert (
+            route.calls[1].request.url.params["datetime"]
+            == "2024-01-01T00:00:00Z/2024-01-02T00:00:00Z"
+        )
+        # interval string passes through unchanged
+        await edr.position(
+            "c1", coords=(4.89, 52.37), datetime="2024-01-01T00:00:00Z/.."
+        )
+        assert (
+            route.calls[2].request.url.params["datetime"] == "2024-01-01T00:00:00Z/.."
+        )
 
 
 async def test_geojson_output_format(edr):

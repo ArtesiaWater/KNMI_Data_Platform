@@ -1,6 +1,9 @@
 """Tests for the Open Data catalog client."""
 
+from datetime import UTC, datetime
+
 import httpx
+import pandas as pd
 import pytest
 import respx
 
@@ -111,6 +114,47 @@ async def test_explicit_order_by_is_respected(catalog):
             "ds", "1.0", start_time="2024-01-01T00:00:00Z", order_by="created"
         )
         assert route.calls[0].request.url.params["orderBy"] == "created"
+
+
+async def test_timestamp_inputs_normalized_to_utc(catalog):
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(FILES_URL).mock(
+            return_value=httpx.Response(200, json=_page([]))
+        )
+        await catalog.list_files(
+            "ds",
+            "1.0",
+            start_time=pd.Timestamp("2024-01-01 12:00"),  # naive -> UTC
+            end_time=pd.Timestamp("2024-01-02T12:00:00+02:00"),  # -> UTC
+        )
+        params = route.calls[0].request.url.params
+        assert params["begin"] == "2024-01-01T12:00:00Z"
+        assert params["end"] == "2024-01-02T10:00:00Z"
+        assert params["orderBy"] == "lastModified"
+
+
+async def test_datetime_objects_accepted(catalog):
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(FILES_URL).mock(
+            return_value=httpx.Response(200, json=_page([]))
+        )
+        await catalog.list_files(
+            "ds", "1.0", start_time=datetime(2024, 1, 1, tzinfo=UTC)
+        )
+        assert route.calls[0].request.url.params["begin"] == "2024-01-01T00:00:00Z"
+
+
+async def test_start_after_end_raises(catalog):
+    with (
+        respx.mock(assert_all_called=False),
+        pytest.raises(ValueError, match="after end_time"),
+    ):
+        await catalog.list_files(
+            "ds",
+            "1.0",
+            start_time="2024-02-01T00:00:00Z",
+            end_time="2024-01-01T00:00:00Z",
+        )
 
 
 async def test_403_raises_auth_error(catalog):

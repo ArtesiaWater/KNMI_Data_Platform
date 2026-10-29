@@ -5,10 +5,12 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+import pandas as pd
 
 from knmidata._constants import OPENDATA_BASE_URL
 from knmidata._exceptions import KNMIError
 from knmidata._http import AsyncTransport
+from knmidata._time import TimeLike, to_iso8601
 
 
 @dataclass(slots=True, kw_only=True)
@@ -30,8 +32,8 @@ class AsyncCatalogClient:
         self,
         dataset_name: str,
         dataset_version: str,
-        start_time: str | None = None,
-        end_time: str | None = None,
+        start_time: TimeLike | None = None,
+        end_time: TimeLike | None = None,
         max_keys: int = 1000,
         sorting: str | None = None,
         order_by: str | None = None,
@@ -45,12 +47,13 @@ class AsyncCatalogClient:
             Name of the KNMI dataset (e.g., 'rad_nl25_rac_mfbs_01h').
         dataset_version : str
             Dataset version identifier (e.g., '2.0').
-        start_time : str | None, default=None
-            ISO-8601 start timestamp filter (e.g. '2024-01-01T00:00:00Z'). Requires
-            server-side ordering by modification time, so `order_by` defaults to
-            'lastModified' when a time filter is given.
-        end_time : str | None, default=None
-            ISO-8601 end timestamp filter.
+        start_time : TimeLike | None, default=None
+            Start timestamp filter (ISO-8601 string, pandas Timestamp, datetime, or
+            date; naive values are assumed UTC). Requires server-side ordering by
+            modification time, so `order_by` defaults to 'lastModified' when a time
+            filter is given.
+        end_time : TimeLike | None, default=None
+            End timestamp filter.
         max_keys : int, default=1000
             Number of keys to request per pagination batch (API maximum is 1000).
         sorting : str | None, default=None
@@ -74,7 +77,15 @@ class AsyncCatalogClient:
             f"{OPENDATA_BASE_URL}/datasets/{dataset_name}/"
             f"versions/{dataset_version}/files"
         )
-        if (start_time or end_time) and order_by is None:
+        begin = to_iso8601(start_time) if start_time is not None else None
+        end = to_iso8601(end_time) if end_time is not None else None
+        if (
+            begin is not None
+            and end is not None
+            and pd.Timestamp(begin) > pd.Timestamp(end)
+        ):
+            raise ValueError(f"start_time ({begin}) is after end_time ({end}).")
+        if (begin or end) and order_by is None:
             order_by = "lastModified"
 
         pattern = re.compile(file_pattern) if file_pattern else None
@@ -90,10 +101,10 @@ class AsyncCatalogClient:
                 params["sorting"] = sorting
             if order_by:
                 params["orderBy"] = order_by
-            if start_time:
-                params["begin"] = start_time
-            if end_time:
-                params["end"] = end_time
+            if begin:
+                params["begin"] = begin
+            if end:
+                params["end"] = end
 
             payload = await self.transport.get_json(
                 endpoint, auth=self.auth, params=params

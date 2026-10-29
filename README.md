@@ -36,12 +36,14 @@ import knmidata
 ds = knmidata.open_dataset(
     "10-minute-in-situ-meteorological-observations",
     "1.0",
-    start_time="2024-06-01T00:00:00Z",
-    end_time="2024-06-02T00:00:00Z",
+    start_time="2024-06-01T00:00:00Z",  # str, pd.Timestamp, datetime, or date
+    end_time=pd.Timestamp("2024-06-02"),  # naive values are assumed UTC
     file_pattern=r"KMDS__OPER_P___10M_OBS_L2_2024060[12].*\.nc",
     cache_dir="./data",  # keep downloaded files here; omit to load into memory only
 )
 ```
+
+Time arguments accept `str`, `pandas.Timestamp`, `datetime`, or `date` (exported as `knmidata.TimeLike`) and are normalized to UTC ISO-8601 before being sent to the API.
 
 ### Async client
 
