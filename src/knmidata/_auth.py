@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass
 from functools import lru_cache
 from logging import getLogger
+from pathlib import Path
 from typing import Protocol
 
 import httpx
@@ -102,14 +103,51 @@ class APIKeyAuth(httpx.Auth):
         yield request
 
 
+def _read_key_file(env_var: str) -> str | None:
+    """Read an API key from the file whose path is stored in an environment variable.
+
+    Useful to keep keys out of notebooks/scripts and shell history: set e.g.
+    `KNMI_API_KEY_FILE=/path/to/key.txt` (chmod 600) instead of the key itself.
+
+    Parameters
+    ----------
+    env_var : str
+        Name of the environment variable holding the file path.
+
+    Returns
+    -------
+    str | None
+        The key read from the file, or None if the variable is not set.
+
+    Raises
+    ------
+    KNMIAuthError
+        If the variable is set but the file cannot be read or is empty.
+    """
+    path = os.getenv(env_var)
+    if not path:
+        return None
+    try:
+        key = Path(path).read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        raise KNMIAuthError(
+            f"Could not read API key file {path!r} (from ${env_var}): {exc}"
+        ) from exc
+    if not key:
+        raise KNMIAuthError(f"API key file {path!r} (from ${env_var}) is empty.")
+    return key
+
+
 def resolve_open_data_auth(api_key: str | None = None) -> httpx.Auth:
     """Resolve authentication strategy for the Open Data API.
 
     Resolution order:
     1. Explicitly passed `api_key`.
     2. Environment variable `KNMI_OPEN_DATA_KEY`.
-    3. Environment variable `KNMI_API_KEY`.
-    4. KNMI public anonymous key (scraped from the docs page, cached).
+    3. File path in environment variable `KNMI_OPEN_DATA_KEY_FILE`.
+    4. Environment variable `KNMI_API_KEY`.
+    5. File path in environment variable `KNMI_API_KEY_FILE`.
+    6. KNMI public anonymous key (scraped from the docs page, cached).
 
     Parameters
     ----------
@@ -124,7 +162,9 @@ def resolve_open_data_auth(api_key: str | None = None) -> httpx.Auth:
     resolved = (
         api_key
         or os.getenv("KNMI_OPEN_DATA_KEY")
+        or _read_key_file("KNMI_OPEN_DATA_KEY_FILE")
         or os.getenv("KNMI_API_KEY")
+        or _read_key_file("KNMI_API_KEY_FILE")
         or get_anonymous_opendata_api_key()
     )
     if not resolved:
@@ -141,7 +181,9 @@ def resolve_edr_auth(api_key: str | None = None) -> httpx.Auth:
     Resolution order:
     1. Explicitly passed `api_key`.
     2. Environment variable `KNMI_EDR_KEY`.
-    3. Environment variable `KNMI_API_KEY`.
+    3. File path in environment variable `KNMI_EDR_KEY_FILE`.
+    4. Environment variable `KNMI_API_KEY`.
+    5. File path in environment variable `KNMI_API_KEY_FILE`.
 
     Parameters
     ----------
@@ -158,11 +200,18 @@ def resolve_edr_auth(api_key: str | None = None) -> httpx.Auth:
     KNMIAuthError
         If no key can be resolved from arguments or environment variables.
     """
-    resolved = api_key or os.getenv("KNMI_EDR_KEY") or os.getenv("KNMI_API_KEY")
+    resolved = (
+        api_key
+        or os.getenv("KNMI_EDR_KEY")
+        or _read_key_file("KNMI_EDR_KEY_FILE")
+        or os.getenv("KNMI_API_KEY")
+        or _read_key_file("KNMI_API_KEY_FILE")
+    )
     if not resolved:
         raise KNMIAuthError(
             "The KNMI EDR API requires a personal registered API key. "
-            "Pass `edr_key=...` or set the KNMI_EDR_KEY environment variable. "
+            "Pass `edr_key=...` or set the KNMI_EDR_KEY environment variable "
+            "(or KNMI_EDR_KEY_FILE pointing to a file with the key). "
             "Request a key at https://developer.dataplatform.knmi.nl/."
         )
     return APIKeyAuth(api_key=resolved)

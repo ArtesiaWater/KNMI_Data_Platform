@@ -20,6 +20,16 @@ export KNMI_EDR_KEY="<edr key>"                     # EDR API only (no anonymous
 
 Note that Open Data and EDR keys are not interchangeable. For the Open Data API only, you can omit the key entirely and the public anonymous key (published on the docs page) is used automatically, subject to a shared rate limit.
 
+### Keeping keys out of shared notebooks/scripts
+
+Never hardcode a key in a notebook cell. Instead, in order of preference:
+
+1. a gitignored `.env` file loaded with `python-dotenv` (`pip install knmidata[dotenv]`, see `docs/.env.example`): `from dotenv import load_dotenv; load_dotenv()`;
+2. shell environment variables (`export KNMI_API_KEY=...`);
+3. a key file: `KNMI_API_KEY_FILE=/path/to/key.txt` (chmod 600) — `knmidata` reads the file for you (`KNMI_OPEN_DATA_KEY_FILE` / `KNMI_EDR_KEY_FILE` also exist).
+
+`knmidata` never prints or logs the key, and strip notebook outputs before sharing (pre-commit runs `nbstripout`).
+
 ## Supported APIs
 
 - **Open Data API** (`https://api.dataplatform.knmi.nl/open-data/v1`): bulk file archives (e.g. radar precipitation composites, in-situ observations). Handles cursor-based file pagination (with optional ISO-8601 time filtering), AWS S3 presigned URL retrieval, concurrent streaming downloads with atomic writes, and assembly into `xarray.Dataset` via `xr.open_mfdataset`. Only NetCDF/HDF5 files are supported (GRIB files, e.g. HARMONIE model output, are not).

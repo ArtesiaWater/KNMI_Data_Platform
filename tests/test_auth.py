@@ -52,6 +52,42 @@ def test_resolve_edr_auth_requires_a_key():
         resolve_edr_auth()
 
 
+def test_resolve_open_data_auth_from_key_file(monkeypatch, tmp_path):
+    key_file = tmp_path / "key.txt"
+    key_file.write_text("file-key-123\n")
+    monkeypatch.setenv("KNMI_API_KEY_FILE", str(key_file))
+    assert resolve_open_data_auth().api_key == "file-key-123"
+
+
+def test_resolve_edr_auth_from_key_file(monkeypatch, tmp_path):
+    key_file = tmp_path / "edr.txt"
+    key_file.write_text("edr-file-key\n")
+    monkeypatch.setenv("KNMI_EDR_KEY_FILE", str(key_file))
+    assert resolve_edr_auth().api_key == "edr-file-key"
+
+
+def test_key_env_var_takes_precedence_over_key_file(monkeypatch, tmp_path):
+    key_file = tmp_path / "key.txt"
+    key_file.write_text("file-key")
+    monkeypatch.setenv("KNMI_API_KEY_FILE", str(key_file))
+    monkeypatch.setenv("KNMI_API_KEY", "env-key")
+    assert resolve_open_data_auth().api_key == "env-key"
+
+
+def test_missing_key_file_raises_auth_error(monkeypatch, tmp_path):
+    monkeypatch.setenv("KNMI_API_KEY_FILE", str(tmp_path / "nope.txt"))
+    with pytest.raises(KNMIAuthError, match="Could not read API key file"):
+        resolve_open_data_auth()
+
+
+def test_empty_key_file_raises_auth_error(monkeypatch, tmp_path):
+    key_file = tmp_path / "empty.txt"
+    key_file.write_text("  \n")
+    monkeypatch.setenv("KNMI_API_KEY_FILE", str(key_file))
+    with pytest.raises(KNMIAuthError, match="is empty"):
+        resolve_open_data_auth()
+
+
 def test_resolve_edr_auth_env(monkeypatch):
     monkeypatch.setenv("KNMI_EDR_KEY", "edr-env-key")
     assert resolve_edr_auth().api_key == "edr-env-key"
