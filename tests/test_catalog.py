@@ -8,8 +8,8 @@ import pytest
 import respx
 
 from knmidata._auth import APIKeyAuth
-from knmidata._constants import OPENDATA_BASE_URL as OPENDATA
 from knmidata._exceptions import KNMIAuthError, KNMIError
+from knmidata.config import OPENDATA_BASE_URL as OPENDATA
 from knmidata.opendata.catalog import AsyncCatalogClient
 
 FILES_URL = f"{OPENDATA}/datasets/ds/versions/1.0/files"

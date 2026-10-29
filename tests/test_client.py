@@ -5,9 +5,9 @@ import pytest
 import respx
 
 import knmidata
-from knmidata._constants import EDR_BASE_URL as EDR
-from knmidata._constants import OPENDATA_BASE_URL as OPENDATA
 from knmidata._exceptions import NoFilesFoundError
+from knmidata.config import EDR_BASE_URL as EDR
+from knmidata.config import OPENDATA_BASE_URL as OPENDATA
 
 S3 = "https://fake-s3.amazonaws.com"
 FILES_URL = f"{OPENDATA}/datasets/ds/versions/1.0/files"

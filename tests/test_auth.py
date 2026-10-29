@@ -11,8 +11,8 @@ from knmidata._auth import (
     resolve_edr_auth,
     resolve_open_data_auth,
 )
-from knmidata._constants import ANONYMOUS_KEY_DOCS_URL
 from knmidata._exceptions import KNMIAuthError
+from knmidata.config import ANONYMOUS_KEY_DOCS_URL
 
 FAKE_KEY = "eyJ" + "aB3" * 40  # JWT-like token, 122 chars
 
