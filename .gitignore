@@ -92,3 +92,6 @@ tempCodeRunnerFile.py
 
 # Ruff stuff:
 .ruff_cache/
+
+# Own files
+docs/.env.example
