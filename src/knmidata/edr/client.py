@@ -6,7 +6,6 @@ from typing import Any
 import httpx
 import xarray as xr
 
-from knmidata._constants import EDR_BASE_URL
 from knmidata._http import AsyncTransport
 from knmidata._time import to_iso8601
 from knmidata._typing import (
@@ -17,6 +16,7 @@ from knmidata._typing import (
     QueryParams,
     ZLevel,
 )
+from knmidata.config import EDR_BASE_URL
 from knmidata.edr.parsers import parse_coveragejson, parse_geojson
 
 

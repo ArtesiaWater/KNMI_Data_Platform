@@ -6,11 +6,11 @@ from dataclasses import dataclass
 import httpx
 import pandas as pd
 
-from knmidata._constants import OPENDATA_BASE_URL
 from knmidata._exceptions import KNMIError
 from knmidata._http import AsyncTransport
 from knmidata._time import to_iso8601
 from knmidata._typing import QueryParams, TimeLike
+from knmidata.config import OPENDATA_BASE_URL
 
 
 @dataclass(slots=True, kw_only=True)

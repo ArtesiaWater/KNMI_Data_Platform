@@ -7,8 +7,8 @@ import respx
 import xarray as xr
 
 from knmidata._auth import APIKeyAuth
-from knmidata._constants import OPENDATA_BASE_URL as OPENDATA
 from knmidata._exceptions import KNMIError
+from knmidata.config import OPENDATA_BASE_URL as OPENDATA
 from knmidata.opendata.download import AsyncFileDownloader, files_to_dataset
 
 S3 = "https://fake-s3.amazonaws.com"

@@ -7,8 +7,8 @@ import pytest
 import respx
 
 from knmidata._auth import APIKeyAuth
-from knmidata._constants import EDR_BASE_URL as EDR
 from knmidata._exceptions import KNMIError
+from knmidata.config import EDR_BASE_URL as EDR
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.edr.parsers import parse_coveragejson, parse_geojson
 

@@ -10,10 +10,10 @@ from typing import Any, cast
 import httpx
 import xarray as xr
 
-from knmidata._constants import OPENDATA_BASE_URL
 from knmidata._exceptions import KNMIError
 from knmidata._http import AsyncTransport
 from knmidata._typing import CombineMethod, FilePaths, PathLike
+from knmidata.config import OPENDATA_BASE_URL
 
 
 @dataclass(slots=True, kw_only=True)

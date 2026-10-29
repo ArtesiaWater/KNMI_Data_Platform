@@ -9,9 +9,9 @@ from typing import Protocol
 
 import httpx
 
-from knmidata._constants import ANONYMOUS_KEY_DOCS_URL
 from knmidata._exceptions import KNMIAuthError
 from knmidata._typing import AuthFlow
+from knmidata.config import ANONYMOUS_KEY_DOCS_URL
 
 logger = getLogger(__name__)
 
