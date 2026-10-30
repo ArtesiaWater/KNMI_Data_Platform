@@ -116,6 +116,7 @@
 # %%
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 import knmidata
@@ -173,16 +174,10 @@ except ImportError:
 print("KNMI_OPENDATA_API_KEY set:", bool(os.environ.get("KNMI_OPENDATA_API_KEY")))
 print("KNMI_EDR_API_KEY set:", bool(os.environ.get("KNMI_EDR_API_KEY")))
 
-try:
-    client = knmidata.KNMIClient(
-        api_key=os.environ.get("KNMI_OPENDATA_API_KEY") or None,
-        edr_key=os.environ.get("KNMI_EDR_API_KEY") or None,
-    )  # keys are resolved from the environment
-    client_ok = True
-except knmidata.KNMIAuthError as exc:
-    client = None
-    client_ok = False
-    print(f"Could not create a client (no usable key?): {exc}")
+client = knmidata.KNMIClient(
+    api_key=os.environ.get("KNMI_OPENDATA_API_KEY") or None,
+    edr_key=os.environ.get("KNMI_EDR_API_KEY") or None,
+)  # keys are resolved from the environment
 
 # %% [markdown]
 # ## 1. Open Data API — list and download whole files
@@ -202,21 +197,19 @@ except knmidata.KNMIAuthError as exc:
 #    (`combine_by_coords` over the time dimension).
 
 # %%
-if client_ok:
-    try:
-        files = client.opendata.list_files(
-            DATASET_NAME,
-            DATASET_VERSION,
-            start_time=START,
-            end_time=END,
-        )
-    except knmidata.KNMIHTTPError as exc:
-        # e.g. HTTP 429 when the shared anonymous key is rate-limited
-        print(f"Listing files failed: {exc}")
-        files = []
-    print(f"{len(files)} files between {START} and {END}, first 5:")
-    for f in files[:5]:
-        print("  " + f)
+try:
+    files = client.opendata.list_files(
+        DATASET_NAME,
+        DATASET_VERSION,
+        start_time=START,
+        end_time=END,
+    )
+except knmidata.KNMIHTTPError as exc:
+    # e.g. HTTP 429 when the shared anonymous key is rate-limited
+    print(f"Listing files failed: {exc}")
+    files = []
+print(f"{len(files)} files between {START} and {END}: {files}")
+
 
 # %% [markdown]
 # Now download just the first two files of that period and open them as a
@@ -228,23 +221,22 @@ if client_ok:
 
 # %%
 ds = None
-if client_ok:
-    try:
-        ds = client.opendata.open_dataset(
-            DATASET_NAME,
-            DATASET_VERSION,
-            start_time=START,
-            end_time=END,
-            cache_dir=CACHE_DIR,
-        )
-    except knmidata.KNMIHTTPError as exc:
-        # e.g. HTTP 429 when the shared anonymous key is rate-limited:
-        # register for your own key (see above) and pass api_key="...".
-        print(f"Open Data request failed: {exc}")
+try:
+    ds = client.opendata.open_dataset(
+        DATASET_NAME,
+        DATASET_VERSION,
+        start_time=START,
+        end_time=END,
+        cache_dir=CACHE_DIR,
+    )
+except knmidata.KNMIHTTPError as exc:
+    # e.g. HTTP 429 when the shared anonymous key is rate-limited:
+    # register for your own key (see above) and pass api_key="...".
+    print(f"Open Data request failed: {exc}")
 
 if ds is not None:
     print(f"\nDownloaded files are cached in: {CACHE_DIR.resolve()}")
-    print("\nCombined dataset (2 daily files):")
+    print("\nCombined dataset:")
     print(ds)
     print("\nVariables in the dataset:", list(ds.data_vars))
 
@@ -275,31 +267,24 @@ if ds is not None:
 # evaporation at De Bilt for last week" without downloading whole files.
 
 # %%
-edr_available = False
-if client_ok:
-    try:
-        collections = client.edr.collections()
-        edr_available = True
-    except knmidata.KNMIAuthError as exc:
-        print(f"EDR API needs a registered key — skipping the EDR section.\n{exc}")
+collections = client.edr.collections()
 
-if edr_available:
-    print(
-        f"Available EDR collections: {[c['id'] for c in collections.get('collections', [])]}"
-    )
+print(
+    f"Available EDR collections: {[c['id'] for c in collections.get('collections', [])]}"
+)
 
-    # Collection metadata: description, extent, and the available parameters.
-    # (The wire key is "parameter-names"; fall back to other spellings.)
-    meta = client.edr.collection(COLLECTION)
-    params_meta = meta.get("parameter_names")
+# Collection metadata: description, extent, and the available parameters.
+# (The wire key is "parameter-names"; fall back to other spellings.)
+meta = client.edr.collection(COLLECTION)
+params_meta = meta.get("parameter_names")
 
-    print(
-        f"\nCollection '{COLLECTION}': {len(params_meta)} parameters, e.g. "
-        + ", ".join(list(params_meta)[:8])
-    )
-    # Check that the variables we want are actually in this collection.
-    missing = [p for p in PARAMETERS if p not in params_meta]
-    print(f"Requested {PARAMETERS}; missing from collection: {missing or 'none'}")
+print(
+    f"\nCollection '{COLLECTION}': {len(params_meta)} parameters, e.g. "
+    + ", ".join(list(params_meta)[:8])
+)
+# Check that the variables we want are actually in this collection.
+missing = [p for p in PARAMETERS if p not in params_meta]
+print(f"Requested {PARAMETERS}; missing from collection: {missing or 'none'}")
 
 # %% [markdown]
 # ### Locations: where are the stations?
@@ -310,32 +295,31 @@ if edr_available:
 # %%
 locations = None
 de_bilt_id = "06260"  # fallback: WMO id of De Bilt
-if edr_available:
-    locations = client.edr.locations(COLLECTION)
-    features = locations.get("features", [])
-    print(f"{len(features)} measurement locations; first 3:")
-    for feat in features[:3]:
-        props = feat.get("properties", {})
-        name = props.get("name") or props.get("label")
-        print(f"  id={feat.get('id')}: {name} at {feat['geometry']['coordinates']}")
+locations = client.edr.locations(COLLECTION)
+features = locations.get("features", [])
+print(f"{len(features)} measurement locations; first 3:")
+for feat in features[:3]:
+    props = feat.get("properties", {})
+    name = props.get("name") or props.get("label")
+    print(f"  id={feat.get('id')}: {name} at {feat['geometry']['coordinates']}")
 
-    # Find De Bilt's station id by name. The id is the GeoJSON feature 'id'
-    # (older responses may carry it in properties instead).
-    for feat in features:
-        props = feat.get("properties", {})
-        name = str(props.get("name") or props.get("label") or "")
-        if "DE BILT" in name.upper():
-            sid = (
-                feat.get("id")
-                or props.get("id")
-                or props.get("eumetnet:locationId")
-                or props.get("wigosId")
-                or props.get("wmoId")
-            )
-            if sid:
-                de_bilt_id = str(sid)
-            print(f"De Bilt feature properties: {props}")
-    print(f"De Bilt station id: {de_bilt_id}")
+# Find De Bilt's station id by name. The id is the GeoJSON feature 'id'
+# (older responses may carry it in properties instead).
+for feat in features:
+    props = feat.get("properties", {})
+    name = str(props.get("name") or props.get("label") or "")
+    if "DE BILT" in name.upper():
+        sid = (
+            feat.get("id")
+            or props.get("id")
+            or props.get("eumetnet:locationId")
+            or props.get("wigosId")
+            or props.get("wmoId")
+        )
+        if sid:
+            de_bilt_id = str(sid)
+        print(f"De Bilt feature properties: {props}")
+print(f"De Bilt station id: {de_bilt_id}")
 
 # %% [markdown]
 # ### Location query: daily time series at De Bilt
@@ -351,17 +335,15 @@ if edr_available:
 # data variable with units and a long name.
 
 # %%
-ts = None
-if edr_available:
-    ts = client.edr.location_data(
-        COLLECTION,
-        de_bilt_id,
-        start_time=START,
-        end_time=END,
-        parameters=PARAMETERS,
-    )
-    print(f"Daily time series at De Bilt (station {de_bilt_id}):")
-    print(ts)
+ts = client.edr.location_data(
+    COLLECTION,
+    de_bilt_id,
+    start_time=START,
+    end_time=END,
+    parameters=PARAMETERS,
+)
+print(f"Daily time series at De Bilt (station {de_bilt_id}):")
+print(ts)
 
 # %% [markdown]
 # ### Plot the EDR time series
@@ -370,41 +352,28 @@ if edr_available:
 # variable (needs `matplotlib`, included in the `notebooks` extra).
 
 # %%
-if ts is not None:
-    import matplotlib.pyplot as plt
+fig, axes = plt.subplots(
+    len(PARAMETERS), 1, figsize=(9, 2.5 * len(PARAMETERS)), sharex=True, layout="tight"
+)
+for ax, var in zip(axes, PARAMETERS, strict=True):
+    # drop singleton dims (x, y, station, coverage) so a 1D time series remains
+    da = ts[var].squeeze(drop=True)
+    for d in list(da.dims):
+        if d != "time" and da.sizes[d] > 1:
+            da = da.isel({d: 0})
+    da.plot(ax=ax, marker="o", label="EDR")
+    # overlay the same variable from the downloaded Open Data files, if available
+    das = ds.sel(station=de_bilt_id)[var]  # WSI, e.g. '0-20000-0-06260'
+    das.squeeze(drop=True).plot(ax=ax, marker="x", color="C1", label="Open Data")
+    ax.legend()
+    ax.set_title(
+        f"{var} — {da.attrs.get('long_name', var)} ({da.attrs.get('units', '?')})"
+    )
+    ax.grid(alpha=0.3)
+fig.suptitle(
+    f"Daily values at De Bilt, {START.date()} to {END.date()} (EDR location query)"
+)
 
-    fig, axes = plt.subplots(
-        len(PARAMETERS), 1, figsize=(9, 2.5 * len(PARAMETERS)), sharex=True
-    )
-    for ax, var in zip(axes, PARAMETERS, strict=True):
-        # drop singleton dims (x, y, station, coverage) so a 1D time series remains
-        da = ts[var].squeeze(drop=True)
-        for d in list(da.dims):
-            if d != "time" and da.sizes[d] > 1:
-                da = da.isel({d: 0})
-        da.plot(ax=ax, marker="o", label="EDR")
-        # overlay the same variable from the downloaded Open Data files, if available
-        if ds is not None and var in ds.data_vars and "station" in ds.coords:
-            try:
-                das = ds.sel(station=de_bilt_id)[var]  # WSI, e.g. '0-20000-0-06260'
-            except (KeyError, ValueError):
-                try:
-                    das = ds.sel(station=int(de_bilt_id.split("-")[-1]))[var]  # WMO 260
-                except (KeyError, ValueError):
-                    das = ds[var].isel(station=0)
-            das.squeeze(drop=True).plot(
-                ax=ax, marker="x", color="C1", label="Open Data"
-            )
-        ax.legend()
-        ax.set_title(
-            f"{var} — {da.attrs.get('long_name', var)} ({da.attrs.get('units', '?')})"
-        )
-        ax.grid(alpha=0.3)
-    fig.suptitle(
-        f"Daily values at De Bilt, {START.date()} to {END.date()} (EDR location query)"
-    )
-    fig.tight_layout()
-    plt.show()
 
 # %% [markdown]
 # ### Area query: all stations in a bounding box
@@ -413,20 +382,15 @@ if ts is not None:
 # of per-station coverages, merged by `knmidata` along the `station` dim).
 
 # %%
-if edr_available:
-    try:
-        area = client.edr.area(
-            COLLECTION,
-            bbox=NL_BBOX,
-            start_time=START,
-            end_time=END,
-            parameters=PARAMETERS,
-        )
-        print("All stations within the NL bounding box:")
-        print(area)
-    except knmidata.KNMIHTTPError as exc:
-        # not every collection supports every query type
-        print(f"Area query not available for this collection: {exc}")
+area = client.edr.area(
+    COLLECTION,
+    bbox=NL_BBOX,
+    start_time=START,
+    end_time=END,
+    parameters=PARAMETERS,
+)
+print("All stations within the NL bounding box:")
+print(area)
 
 # %% [markdown]
 # ## Open Data vs EDR — what did we just see?
@@ -447,6 +411,5 @@ if edr_available:
 #   plot (as above), or write to disk.
 
 # %%
-if client_ok:
-    client.close()
+client.close()
 print("\nDone. Client closed.")
