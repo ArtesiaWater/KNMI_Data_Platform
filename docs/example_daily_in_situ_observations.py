@@ -80,8 +80,8 @@
 #
 # | API | Argument | Environment variables |
 # |---|---|---|
-# | Open Data | `api_key=` | `KNMI_OPEN_DATA_KEY` (+`_FILE`), then `KNMI_API_KEY` (+`_FILE`), then the public anonymous key |
-# | EDR | `edr_key=` | `KNMI_EDR_KEY` (+`_FILE`), then `KNMI_API_KEY` (+`_FILE`) |
+# | Open Data | `api_key=` | `KNMI_OPENDATA_API_KEY` (+`_FILE`), then the public anonymous key |
+# | EDR | `edr_key=` | `KNMI_EDR_API_KEY` (+`_FILE`) |
 #
 # Note: **Open Data and EDR keys are not interchangeable**, and the EDR API
 # has no anonymous key. The anonymous Open Data key is published on the docs
@@ -94,21 +94,21 @@
 # notebook (or its saved outputs, git history, screenshots) can see it. Safe
 # patterns, in order of preference:
 #
-# 1. **`.env` file (gitignored) + python-dotenv.** Copy `docs/.env.example`
+# 1. **`.env` file (gitignored) + python-dotenv.** Create a `.env` file (see the README Authentication section)
 #    to `.env`, fill in your keys, `chmod 600 .env`. `.env` is in
 #    `.gitignore`, so it is never committed. In the notebook, only load it:
 #    `load_dotenv()` — the key itself never appears in the notebook.
 #    Install with `pip install knmidata[dotenv]`.
-# 2. **Shell environment variables**: `export KNMI_API_KEY=...` /
-#    `export KNMI_EDR_KEY=...` in your profile or before launching Jupyter.
-# 3. **Key file**: set `KNMI_API_KEY_FILE=/path/to/key.txt` (chmod 600)
+# 2. **Shell environment variables**: `export KNMI_OPENDATA_API_KEY=...` /
+#    `export KNMI_EDR_API_KEY=...` in your profile or before launching Jupyter.
+# 3. **Key file**: set `KNMI_OPENDATA_API_KEY_FILE=/path/to/key.txt` (chmod 600)
 #    instead of the key itself; `knmidata` reads the file for you.
 # 4. **GitHub Actions**: store the key as a repository *secret* and pass it
 #    to the workflow step as an env var (see `.github/workflows/notebooks.yaml`,
 #    which executes this notebook in CI) — GitHub masks secret values in logs.
 #
 # Additional hygiene: `knmidata` never prints or logs the key (check with
-# `bool(os.environ.get("KNMI_API_KEY"))`, not by printing it); when sharing an
+# `bool(os.environ.get("KNMI_OPENDATA_API_KEY"))`, not by printing it); when sharing an
 # executed `.ipynb`, strip outputs first (the repo's pre-commit already runs
 # `nbstripout`); if a key ever does leak, revoke/rotate it in the
 # [developer portal](https://developer.dataplatform.knmi.nl/).
@@ -157,7 +157,7 @@ knmidata.show_versions()
 # %%
 import os
 
-# Load keys from the gitignored .env file (see docs/.env.example).
+# Load keys from the gitignored .env file (see the README Authentication section).
 # The key itself never appears in this notebook. On GitHub Actions, skip the
 # .env file: store the key as a repository *secret* and expose it to the
 # workflow as an env var (see .github/workflows/notebooks.yaml) — GitHub
@@ -167,16 +167,16 @@ try:
 
     load_dotenv(".env")
 except ImportError:
-    pass  # alternative: export KNMI_API_KEY / KNMI_EDR_KEY in your shell
+    pass  # alternative: export KNMI_OPENDATA_API_KEY / KNMI_EDR_API_KEY in your shell
 
 # Presence check only — never print the key itself.
-print("KNMI_API_KEY set:", bool(os.environ.get("KNMI_API_KEY")))
-print("KNMI_EDR_KEY set:", bool(os.environ.get("KNMI_EDR_KEY")))
+print("KNMI_OPENDATA_API_KEY set:", bool(os.environ.get("KNMI_OPENDATA_API_KEY")))
+print("KNMI_EDR_API_KEY set:", bool(os.environ.get("KNMI_EDR_API_KEY")))
 
 try:
     client = knmidata.KNMIClient(
-        api_key=os.environ.get("KNMI_API_KEY") or None,
-        edr_key=os.environ.get("KNMI_EDR_KEY") or None,
+        api_key=os.environ.get("KNMI_OPENDATA_API_KEY") or None,
+        edr_key=os.environ.get("KNMI_EDR_API_KEY") or None,
     )  # keys are resolved from the environment
     client_ok = True
 except knmidata.KNMIAuthError as exc:

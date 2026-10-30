@@ -14,12 +14,10 @@ S3 = "https://fake-s3.amazonaws.com"
 def _clean_knmi_env(monkeypatch):
     """Ensure KNMI env vars never leak between tests and the key cache is fresh."""
     for var in (
-        "KNMI_API_KEY",
-        "KNMI_OPEN_DATA_KEY",
-        "KNMI_EDR_KEY",
-        "KNMI_API_KEY_FILE",
-        "KNMI_OPEN_DATA_KEY_FILE",
-        "KNMI_EDR_KEY_FILE",
+        "KNMI_OPENDATA_API_KEY",
+        "KNMI_OPENDATA_API_KEY_FILE",
+        "KNMI_EDR_API_KEY",
+        "KNMI_EDR_API_KEY_FILE",
     ):
         monkeypatch.delenv(var, raising=False)
     get_anonymous_opendata_api_key.cache_clear()

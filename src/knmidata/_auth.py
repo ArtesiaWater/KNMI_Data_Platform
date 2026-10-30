@@ -46,7 +46,7 @@ def get_anonymous_opendata_api_key() -> str:
     except httpx.HTTPError as exc:
         raise KNMIAuthError(
             f"Could not retrieve the anonymous API key from {ANONYMOUS_KEY_DOCS_URL} "
-            f"({exc}). Pass `api_key=...` or set the KNMI_API_KEY / KNMI_OPEN_DATA_KEY "
+            f"({exc}). Pass `api_key=...` or set the KNMI_OPENDATA_API_KEY "
             "environment variable, or register for a key at "
             "https://developer.dataplatform.knmi.nl/."
         ) from exc
@@ -55,7 +55,7 @@ def get_anonymous_opendata_api_key() -> str:
     if match is None:
         raise KNMIAuthError(
             f"Could not find an anonymous API key on {ANONYMOUS_KEY_DOCS_URL}. "
-            "Pass `api_key=...` or set the KNMI_API_KEY / KNMI_OPEN_DATA_KEY "
+            "Pass `api_key=...` or set the KNMI_OPENDATA_API_KEY "
             "environment variable, or register for a key at "
             "https://developer.dataplatform.knmi.nl/."
         )
@@ -107,7 +107,7 @@ def _read_key_file(env_var: str) -> str | None:
     """Read an API key from the file whose path is stored in an environment variable.
 
     Useful to keep keys out of notebooks/scripts and shell history: set e.g.
-    `KNMI_API_KEY_FILE=/path/to/key.txt` (chmod 600) instead of the key itself.
+    `KNMI_OPENDATA_API_KEY_FILE=/path/to/key.txt` (chmod 600) instead of the key itself.
 
     Parameters
     ----------
@@ -141,13 +141,14 @@ def _read_key_file(env_var: str) -> str | None:
 def resolve_open_data_auth(api_key: str | None = None) -> httpx.Auth:
     """Resolve authentication strategy for the Open Data API.
 
+    KNMI issues a separate key per API (an Open Data key does not work for the
+    EDR API and vice versa), so there is no general `KNMI_API_KEY`.
+
     Resolution order:
     1. Explicitly passed `api_key`.
-    2. Environment variable `KNMI_OPEN_DATA_KEY`.
-    3. File path in environment variable `KNMI_OPEN_DATA_KEY_FILE`.
-    4. Environment variable `KNMI_API_KEY`.
-    5. File path in environment variable `KNMI_API_KEY_FILE`.
-    6. KNMI public anonymous key (scraped from the docs page, cached).
+    2. Environment variable `KNMI_OPENDATA_API_KEY`.
+    3. File path in environment variable `KNMI_OPENDATA_API_KEY_FILE`.
+    4. KNMI public anonymous key (scraped from the docs page, cached).
 
     Parameters
     ----------
@@ -161,10 +162,8 @@ def resolve_open_data_auth(api_key: str | None = None) -> httpx.Auth:
     """
     resolved = (
         api_key
-        or os.getenv("KNMI_OPEN_DATA_KEY")
-        or _read_key_file("KNMI_OPEN_DATA_KEY_FILE")
-        or os.getenv("KNMI_API_KEY")
-        or _read_key_file("KNMI_API_KEY_FILE")
+        or os.getenv("KNMI_OPENDATA_API_KEY")
+        or _read_key_file("KNMI_OPENDATA_API_KEY_FILE")
         or get_anonymous_opendata_api_key()
     )
     if not resolved:
@@ -180,10 +179,8 @@ def resolve_edr_auth(api_key: str | None = None) -> httpx.Auth:
 
     Resolution order:
     1. Explicitly passed `api_key`.
-    2. Environment variable `KNMI_EDR_KEY`.
-    3. File path in environment variable `KNMI_EDR_KEY_FILE`.
-    4. Environment variable `KNMI_API_KEY`.
-    5. File path in environment variable `KNMI_API_KEY_FILE`.
+    2. Environment variable `KNMI_EDR_API_KEY`.
+    3. File path in environment variable `KNMI_EDR_API_KEY_FILE`.
 
     Parameters
     ----------
@@ -202,16 +199,14 @@ def resolve_edr_auth(api_key: str | None = None) -> httpx.Auth:
     """
     resolved = (
         api_key
-        or os.getenv("KNMI_EDR_KEY")
-        or _read_key_file("KNMI_EDR_KEY_FILE")
-        or os.getenv("KNMI_API_KEY")
-        or _read_key_file("KNMI_API_KEY_FILE")
+        or os.getenv("KNMI_EDR_API_KEY")
+        or _read_key_file("KNMI_EDR_API_KEY_FILE")
     )
     if not resolved:
         raise KNMIAuthError(
-            "The KNMI EDR API requires a personal registered API key. "
-            "Pass `edr_key=...` or set the KNMI_EDR_KEY environment variable "
-            "(or KNMI_EDR_KEY_FILE pointing to a file with the key). "
+            "The KNMI EDR API requires a personal registered EDR API key. "
+            "Pass `edr_key=...` or set the KNMI_EDR_API_KEY environment variable "
+            "(or KNMI_EDR_API_KEY_FILE pointing to a file with the key). "
             "Request a key at https://developer.dataplatform.knmi.nl/."
         )
     return APIKeyAuth(api_key=resolved)

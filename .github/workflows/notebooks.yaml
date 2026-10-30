@@ -2,7 +2,7 @@ name: Notebooks
 
 # Executes the docs/example_*.py notebooks (percent format) as real notebooks.
 # API keys come from repository secrets (Settings > Secrets and variables >
-# Actions, e.g. KNMI_API_KEY and KNMI_EDR_KEY); GitHub masks secret values in
+# Actions, e.g. KNMI_OPENDATA_API_KEY and KNMI_EDR_API_KEY); GitHub masks secret values in
 # logs and knmidata never prints them. On forks (no secrets) the examples
 # fall back to the anonymous Open Data key and skip the EDR section, so the
 # workflow still passes.
@@ -42,8 +42,8 @@ jobs:
 
       - name: Execute example notebooks
         env:
-          KNMI_API_KEY: ${{ secrets.KNMI_API_KEY }}
-          KNMI_EDR_KEY: ${{ secrets.KNMI_EDR_KEY }}
+          KNMI_OPENDATA_API_KEY: ${{ secrets.KNMI_OPENDATA_API_KEY }}
+          KNMI_EDR_API_KEY: ${{ secrets.KNMI_EDR_API_KEY }}
         run: |
           mkdir -p /tmp/executed
           status=0

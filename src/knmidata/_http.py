@@ -81,7 +81,7 @@ class AsyncTransport:
                 f"KNMI API rejected the API key for {response.url} "
                 f"(HTTP {response.status_code}): {detail[:500]}. "
                 "Request a key at https://developer.dataplatform.knmi.nl/ and pass it "
-                "via `api_key`/`edr_key` or the KNMI_API_KEY / KNMI_EDR_KEY "
+                "via `api_key`/`edr_key` or the KNMI_API_KEY / KNMI_EDR_API_KEY "
                 "environment variables."
             )
         if response.status_code >= 400:

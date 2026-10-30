@@ -24,11 +24,13 @@ class AsyncKNMIClient:
     Parameters
     ----------
     api_key : str | None, default=None
-        API key used for the Open Data API. Falls back to the KNMI_OPEN_DATA_KEY
-        and KNMI_API_KEY environment variables, then to the public anonymous key.
+        API key used for the Open Data API. Falls back to the KNMI_OPENDATA_API_KEY
+        environment variable (or KNMI_OPENDATA_API_KEY_FILE), then to the public
+        anonymous key.
     edr_key : str | None, default=None
-        Dedicated EDR API key if distinct from the main API key. EDR keys are not
-        interchangeable with Open Data keys. Falls back to KNMI_EDR_KEY / KNMI_API_KEY.
+        Dedicated EDR API key. KNMI issues separate keys per API, so an Open Data
+        key does not work for EDR. Falls back to KNMI_EDR_API_KEY (or
+        KNMI_EDR_API_KEY_FILE).
     max_concurrency : int, default=15
         Maximum concurrent network requests.
     timeout : float, default=60.0
@@ -214,11 +216,13 @@ class KNMIClient:
     Parameters
     ----------
     api_key : str | None, default=None
-        API key used for the Open Data API. Falls back to the KNMI_OPEN_DATA_KEY
-        and KNMI_API_KEY environment variables, then to the public anonymous key.
+        API key used for the Open Data API. Falls back to the KNMI_OPENDATA_API_KEY
+        environment variable (or KNMI_OPENDATA_API_KEY_FILE), then to the public
+        anonymous key.
     edr_key : str | None, default=None
-        Dedicated EDR API key if distinct from the main API key. EDR keys are not
-        interchangeable with Open Data keys. Falls back to KNMI_EDR_KEY / KNMI_API_KEY.
+        Dedicated EDR API key. KNMI issues separate keys per API, so an Open Data
+        key does not work for EDR. Falls back to KNMI_EDR_API_KEY (or
+        KNMI_EDR_API_KEY_FILE).
     max_concurrency : int, default=15
         Maximum concurrent network requests.
     timeout : float, default=60.0

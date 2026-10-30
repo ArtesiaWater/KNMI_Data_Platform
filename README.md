@@ -12,21 +12,22 @@ pip install knmidata
 
 All API endpoints require an API key in the `Authorization` header. Request a free registered key at [developer.dataplatform.knmi.nl](https://developer.dataplatform.knmi.nl/), then either pass it explicitly or set an environment variable:
 
+KNMI issues a **separate key per API** — an Open Data key does not work for the EDR API and vice versa, so there is no single general key:
+
 ```bash
-export KNMI_API_KEY="<your registered key>"        # used by both APIs
-export KNMI_OPEN_DATA_KEY="<open data key>"         # Open Data API only
-export KNMI_EDR_KEY="<edr key>"                     # EDR API only (no anonymous key exists)
+export KNMI_OPENDATA_API_KEY="<your open data key>"   # Open Data API
+export KNMI_EDR_API_KEY="<your edr key>"               # EDR API (no anonymous key exists)
 ```
 
-Note that Open Data and EDR keys are not interchangeable. For the Open Data API only, you can omit the key entirely and the public anonymous key (published on the docs page) is used automatically, subject to a shared rate limit.
+For the Open Data API only, you can omit the key entirely and the public anonymous key (published on the docs page) is used automatically, subject to a shared rate limit.
 
 ### Keeping keys out of shared notebooks/scripts
 
 Never hardcode a key in a notebook cell. Instead, in order of preference:
 
-1. a gitignored `.env` file loaded with `python-dotenv` (`pip install knmidata[dotenv]`, see `docs/.env.example`): `from dotenv import load_dotenv; load_dotenv()`;
-2. shell environment variables (`export KNMI_API_KEY=...`);
-3. a key file: `KNMI_API_KEY_FILE=/path/to/key.txt` (chmod 600) — `knmidata` reads the file for you (`KNMI_OPEN_DATA_KEY_FILE` / `KNMI_EDR_KEY_FILE` also exist).
+1. a gitignored `.env` file loaded with `python-dotenv` (`pip install knmidata[dotenv]`): `from dotenv import load_dotenv; load_dotenv()`;
+2. shell environment variables (`export KNMI_OPENDATA_API_KEY=...` / `export KNMI_EDR_API_KEY=...`);
+3. a key file: `KNMI_OPENDATA_API_KEY_FILE=/path/to/key.txt` or `KNMI_EDR_API_KEY_FILE=...` (chmod 600) — `knmidata` reads the file for you.
 
 `knmidata` never prints or logs the key, and strip notebook outputs before sharing (pre-commit runs `nbstripout`).
 
@@ -42,7 +43,7 @@ Never hardcode a key in a notebook cell. Instead, in order of preference:
 ```python
 import knmidata
 
-# one-liner (uses KNMI_API_KEY or the anonymous key)
+# one-liner (uses KNMI_OPENDATA_API_KEY or the anonymous key)
 ds = knmidata.open_dataset(
     "10-minute-in-situ-meteorological-observations",
     "1.0",
@@ -140,4 +141,4 @@ uv run ruff check        # lint
 uv run ty check src      # type check
 ```
 
-CI also executes the `docs/example_*.py` notebooks (via jupytext/nbclient) with API keys taken from repository secrets — see `.github/workflows/notebooks.yaml`. Add secrets named `KNMI_API_KEY` / `KNMI_EDR_KEY` under Settings > Secrets and variables > Actions.
+CI also executes the `docs/example_*.py` notebooks (via jupytext/nbclient) with API keys taken from repository secrets — see `.github/workflows/notebooks.yaml`. Add secrets named `KNMI_OPENDATA_API_KEY` / `KNMI_EDR_API_KEY` under Settings > Secrets and variables > Actions.
