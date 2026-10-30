@@ -213,21 +213,48 @@ class KNMIClient:
 
     Parameters
     ----------
-    **kwargs : Any
-        Keyword arguments forwarded to `AsyncKNMIClient`.
+    api_key : str | None, default=None
+        API key used for the Open Data API. Falls back to the KNMI_OPEN_DATA_KEY
+        and KNMI_API_KEY environment variables, then to the public anonymous key.
+    edr_key : str | None, default=None
+        Dedicated EDR API key if distinct from the main API key. EDR keys are not
+        interchangeable with Open Data keys. Falls back to KNMI_EDR_KEY / KNMI_API_KEY.
+    max_concurrency : int, default=15
+        Maximum concurrent network requests.
+    timeout : float, default=60.0
+        Read timeout in seconds.
+    max_retries : int, default=3
+        Retries for transient failures (429/5xx/transport errors).
     """
 
-    def __init__(self, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        api_key: str | None = None,
+        edr_key: str | None = None,
+        max_concurrency: int = 15,
+        timeout: float = 60.0,
+        max_retries: int = 3,
+    ) -> None:
         self._loop = asyncio.new_event_loop()
         self._thread = threading.Thread(
             target=self._loop.run_forever, name="knmidata-event-loop", daemon=True
         )
         self._thread.start()
         self._closed = False
-        self._async_client = AsyncKNMIClient(**kwargs)
+        self._async_client = AsyncKNMIClient(
+            api_key=api_key,
+            edr_key=edr_key,
+            max_concurrency=max_concurrency,
+            timeout=timeout,
+            max_retries=max_retries,
+        )
 
     def _run(self, coro: Coroutine[Any, Any, T]) -> T:
-        """Run a coroutine on the background loop and block until it completes."""
+        """Run a coroutine on the background loop and block until it completes.
+
+        This makes an async client usable in synchronous code, including
+        environments that already run an event loop.
+        """
         return asyncio.run_coroutine_threadsafe(coro, self._loop).result()
 
     def open_dataset(
