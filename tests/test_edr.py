@@ -22,15 +22,28 @@ def test_parse_coveragejson_axis_order_follows_domain():
     # axes ordered x, y, t -> range values are flattened in that order
     payload = {
         "type": "Coverage",
+        "id": "coverage-1",
+        "title": "Daily temperature",
         "domain": {
             "axes": {
-                "x": {"values": [1.0, 2.0]},
+                "x": {
+                    "values": [1.0, 2.0],
+                    "label": "longitude",
+                    "unit": {"symbol": "deg"},
+                },
                 "y": {"values": [10.0]},
                 "t": {"values": ["2024-01-01T00:00:00Z", "2024-01-01T01:00:00Z"]},
             },
             "referencing": [{"id": "EPSG:4326"}],
         },
-        "parameters": {"TG": {"unit": {"symbol": "C"}, "description": {"en": "temp"}}},
+        "parameters": {
+            "TG": {
+                "unit": {"symbol": "C", "label": "degrees Celsius"},
+                "description": {"en": "temp"},
+                "observedProperty": {"label": "Air temperature"},
+                "measurementType": {"method": "average", "duration": "P1D"},
+            }
+        },
         "ranges": {"TG": {"values": [1.0, 2.0, 3.0, 4.0]}},  # (x=2, y=1, t=2)
     }
     ds = parse_coveragejson(payload)
@@ -41,6 +54,19 @@ def test_parse_coveragejson_axis_order_follows_domain():
     assert ds["TG"].values[1, 0, 1] == 4.0
     assert ds.sizes["time"] == 2
     assert ds.attrs["crs"] == "EPSG:4326"
+    # newly kept metadata
+    assert ds.attrs["coverage_id"] == "coverage-1"
+    assert ds.attrs["coverage_title"] == "Daily temperature"
+    assert ds.attrs["referencing"] == [{"id": "EPSG:4326"}]
+    assert ds["x"].attrs["label"] == "longitude"
+    assert ds["x"].attrs["unit"] == {"symbol": "deg"}
+    assert ds["TG"].attrs["units"] == "C"
+    assert ds["TG"].attrs["unit_label"] == "degrees Celsius"
+    assert ds["TG"].attrs["observed_property"] == "Air temperature"
+    assert ds["TG"].attrs["measurement_type"] == {
+        "method": "average",
+        "duration": "P1D",
+    }
 
 
 def test_parse_coveragejson_maps_nulls_to_nan():
@@ -134,20 +160,27 @@ def test_parse_coveragejson_collection_concats_along_station():
 def test_parse_geojson():
     payload = {
         "type": "FeatureCollection",
+        "bbox": [3.0, 50.5, 7.5, 53.7],
         "features": [
             {
                 "type": "Feature",
+                "id": "0-20000-0-06260",
                 "geometry": {"type": "Point", "coordinates": [4.89, 52.37]},
                 "properties": {
+                    "label": "DE BILT",
                     "station": "260",
                     "datetime": "2024-01-01T00:00:00Z",
                     "T": 5.5,
+                    "edrqueryendpoint": "/collections/c1/locations/0-20000-0-06260",
+                    "parameter-name": ["T"],
                 },
             },
             {
                 "type": "Feature",
+                "id": "0-20000-0-06240",
                 "geometry": {"type": "Point", "coordinates": [5.12, 52.09]},
                 "properties": {
+                    "label": "SCHIPHOL",
                     "station": "240",
                     "datetime": "2024-01-01T01:00:00Z",
                     "T": 6.5,
@@ -162,6 +195,14 @@ def test_parse_geojson():
     assert ds["lon"].values.tolist() == [4.89, 5.12]
     assert ds["time"].dims == ("feature",)
     assert ds["time"].size == 2
+    # newly kept metadata: feature id and label as coords, geometry/bbox as attrs
+    assert ds["id"].values.tolist() == ["0-20000-0-06260", "0-20000-0-06240"]
+    assert ds["label"].values.tolist() == ["DE BILT", "SCHIPHOL"]
+    assert ds.attrs["geometry_type"] == "Point"
+    assert ds.attrs["bbox"] == [3.0, 50.5, 7.5, 53.7]
+    # structural EDR properties are not data variables
+    assert "edrqueryendpoint" not in ds.data_vars
+    assert "parameter-name" not in ds.data_vars
 
 
 async def test_collections_and_metadata_endpoints(edr):
@@ -305,6 +346,70 @@ async def test_datetime_accepts_timestamp_and_interval(edr):
         # no time filter -> no datetime param
         await edr.position("c1", coords=(4.89, 52.37))
         assert "datetime" not in route.calls[4].request.url.params
+
+
+def test_parse_coveragejson_collection_labels_station_dim_with_ids():
+    # /area-style response: one 1x1 grid coverage per station, station WSI in
+    # domain.referencing as eumetnet:locationId
+    def coverage(wsi, lon, lat, tg):
+        return {
+            "domain": {
+                "axes": {
+                    "x": {"values": [lon]},
+                    "y": {"values": [lat]},
+                    "t": {"values": ["2026-06-01T00:00:00Z"]},
+                },
+                "referencing": [
+                    {"id": "EPSG:4326"},
+                    {"eumetnet:locationId": wsi},
+                ],
+            },
+            "ranges": {"TG": {"values": [tg]}},
+        }
+
+    payload = {
+        "type": "CoverageCollection",
+        "parameters": {"TG": {"unit": {"symbol": "C"}, "description": {"en": "t"}}},
+        "coverages": [
+            coverage("0-20000-0-06260", 5.18, 52.10, 18.0),
+            coverage("0-20000-0-06240", 4.93, 52.37, 17.5),
+        ],
+    }
+    ds = parse_coveragejson(payload)
+    assert "station" in ds.dims
+    assert ds["station"].values.tolist() == ["0-20000-0-06260", "0-20000-0-06240"]
+    # station origin carried as lon/lat coordinates along the station dim
+    assert ds["lon"].values.tolist() == [5.18, 4.93]
+    assert ds["lat"].values.tolist() == [52.10, 52.37]
+    tg = ds["TG"]
+    assert tg.sizes["station"] == 2
+    assert "x" not in tg.dims and "y" not in tg.dims
+    assert tg.sel(station="0-20000-0-06260").squeeze().item() == 18.0
+
+
+async def test_nearest_location(edr):
+    endpoint = f"{EDR}/collections/c1/locations"
+    geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "id": "0-20000-0-06260",
+                "geometry": {"coordinates": [5.18, 52.10]},
+                "properties": {"label": "DE BILT"},
+            },
+            {
+                "id": "0-20000-0-06240",
+                "geometry": {"coordinates": [4.93, 52.37]},
+                "properties": {"label": "SCHIPHOL"},
+            },
+        ],
+    }
+    with respx.mock(assert_all_called=False) as router:
+        router.get(endpoint).mock(return_value=httpx.Response(200, json=geojson))
+        near = await edr.nearest_location("c1", coords=(5.17, 52.11))
+    assert near["id"] == "0-20000-0-06260"
+    assert near["name"] == "DE BILT"
+    assert near["distance_km"] < 2.0
 
 
 async def test_location_data_rejects_empty_id(edr):

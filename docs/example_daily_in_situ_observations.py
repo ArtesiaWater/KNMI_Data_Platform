@@ -131,8 +131,9 @@ COLLECTION = "daily-in-situ-meteorological-observations"  # EDR collection id
 # EV24 = Makkink reference evaporation (mm).
 PARAMETERS = ["RH", "TG", "EV24"]
 
-# De Bilt (KNMI's own station, WSI 260), as (lon, lat).
-STATION_COORDS = (4.89, 52.37)
+# De Bilt (KNMI's own station, WSI 0-20000-0-06260), as (lon, lat) — the
+# station's grid point in the EDR responses.
+STATION_COORDS = (5.18, 52.10)
 # Bounding box over the Netherlands: (minx, miny, maxx, maxy).
 NL_BBOX = (3.0, 50.5, 7.5, 53.7)
 
@@ -174,10 +175,16 @@ except ImportError:
 print("KNMI_OPENDATA_API_KEY set:", bool(os.environ.get("KNMI_OPENDATA_API_KEY")))
 print("KNMI_EDR_API_KEY set:", bool(os.environ.get("KNMI_EDR_API_KEY")))
 
-client = knmidata.KNMIClient(
-    api_key=os.environ.get("KNMI_OPENDATA_API_KEY") or None,
-    edr_key=os.environ.get("KNMI_EDR_API_KEY") or None,
-)  # keys are resolved from the environment
+try:
+    client = knmidata.KNMIClient(
+        api_key=os.environ.get("KNMI_OPENDATA_API_KEY") or None,
+        edr_key=os.environ.get("KNMI_EDR_API_KEY") or None,
+    )  # keys are resolved from the environment
+    client_ok = True
+except knmidata.KNMIAuthError as exc:
+    client = None
+    client_ok = False
+    print(f"Could not create a client (no usable key?): {exc}")
 
 # %% [markdown]
 # ## 1. Open Data API — list and download whole files
@@ -197,17 +204,13 @@ client = knmidata.KNMIClient(
 #    (`combine_by_coords` over the time dimension).
 
 # %%
-try:
-    files = client.opendata.list_files(
-        DATASET_NAME,
-        DATASET_VERSION,
-        start_time=START,
-        end_time=END,
-    )
-except knmidata.KNMIHTTPError as exc:
-    # e.g. HTTP 429 when the shared anonymous key is rate-limited
-    print(f"Listing files failed: {exc}")
-    files = []
+
+files = client.opendata.list_files(
+    DATASET_NAME,
+    DATASET_VERSION,
+    start_time=START,
+    end_time=END,
+)
 print(f"{len(files)} files between {START} and {END}: {files}")
 
 
@@ -220,25 +223,18 @@ print(f"{len(files)} files between {START} and {END}: {files}")
 # sent — passing `pd.Timestamp` objects is fine.
 
 # %%
-ds = None
-try:
-    ds = client.opendata.open_dataset(
-        DATASET_NAME,
-        DATASET_VERSION,
-        start_time=START,
-        end_time=END,
-        cache_dir=CACHE_DIR,
-    )
-except knmidata.KNMIHTTPError as exc:
-    # e.g. HTTP 429 when the shared anonymous key is rate-limited:
-    # register for your own key (see above) and pass api_key="...".
-    print(f"Open Data request failed: {exc}")
+ds = client.opendata.open_dataset(
+    DATASET_NAME,
+    DATASET_VERSION,
+    start_time=START,
+    end_time=END,
+    cache_dir=CACHE_DIR,
+)
 
-if ds is not None:
-    print(f"\nDownloaded files are cached in: {CACHE_DIR.resolve()}")
-    print("\nCombined dataset:")
-    print(ds)
-    print("\nVariables in the dataset:", list(ds.data_vars))
+print(f"\nDownloaded files are cached in: {CACHE_DIR.resolve()}")
+print("\nCombined dataset:")
+print(ds)
+print("\nVariables in the dataset:", list(ds.data_vars))
 
 # %% [markdown]
 # ## 2. EDR API — query instead of download
@@ -250,23 +246,22 @@ if ds is not None:
 #   parameters (variables, under the `parameter-names` key), which output
 #   formats, the spatial/temporal extent.
 # - `GET /collections/{id}/locations` — the measurement locations (GeoJSON).
-# - Data queries: `/locations/{location_id}` (data for one station),
-#   `/position` (point, WKT `POINT(lon lat)`), `/area` (polygon from a bbox),
-#   `/cube` (3D: bbox + `z`) — which ones work depends on the collection —
-#   with query parameters:
-#   - `datetime` — built from `start_time`/`end_time` (RFC 3339 interval
-#     `start/end`; open intervals use `..`); both accept `pd.Timestamp`,
-#     datetime, date, or ISO string;
-#   - `parameter-name` — comma-separated variables (see collection metadata);
-#   - `f` — output format: `CoverageJSON` (parsed to `xr.Dataset`) or
-#     `GeoJSON`.
+# - Data queries, with `start_time`/`end_time` (RFC 3339 interval),
+#   `parameter-name` and `f` (CoverageJSON/GeoJSON) query parameters.
 #
 # Instead of files, you get a structured JSON payload describing exactly the
 # queried cube of data, which `knmidata` parses into an `xarray.Dataset`
-# in memory. That makes EDR ideal for "give me temperature, precipitation and
-# evaporation at De Bilt for last week" without downloading whole files.
+# in memory. For station collections there are **three ways** to pick the
+# station(s) — shown below:
+#
+# | Method | Call | When to use |
+# |---|---|---|
+# | by station id | `client.edr.location_data(COLLECTION, location_id, ...)` | you know the station id (WSI) |
+# | nearest to a point | `client.edr.nearest_location(COLLECTION, coords)` → id, then `location_data`; or `client.edr.position(..., coords=...)` (server-side, tolerance-limited) | you have coordinates |
+# | area / bbox | `client.edr.area(COLLECTION, bbox=...)` | you want all stations in a region |
 
 # %%
+
 collections = client.edr.collections()
 
 print(
@@ -276,8 +271,12 @@ print(
 # Collection metadata: description, extent, and the available parameters.
 # (The wire key is "parameter-names"; fall back to other spellings.)
 meta = client.edr.collection(COLLECTION)
-params_meta = meta.get("parameter_names")
-
+params_meta = (
+    meta.get("parameter-names")
+    or meta.get("parameter_names")
+    or meta.get("parameters")
+    or {}
+)
 print(
     f"\nCollection '{COLLECTION}': {len(params_meta)} parameters, e.g. "
     + ", ".join(list(params_meta)[:8])
@@ -286,55 +285,17 @@ print(
 missing = [p for p in PARAMETERS if p not in params_meta]
 print(f"Requested {PARAMETERS}; missing from collection: {missing or 'none'}")
 
+
 # %% [markdown]
-# ### Locations: where are the stations?
+# ### Method 1: by station id — `location_data`
 #
-# `/locations` returns a GeoJSON FeatureCollection — one feature per weather
-# station, with its coordinates and metadata (station id, name, height).
+# `/collections/{id}/locations/{location_id}` with `start_time`/`end_time` and
+# `parameter-name` returns one station's time series (a CoverageCollection with
+# a single coverage). We ask for **RH** (precipitation sum), **TG** (mean
+# temperature) and **EV24** (Makkink evaporation).
 
 # %%
-locations = None
 de_bilt_id = "06260"  # fallback: WMO id of De Bilt
-locations = client.edr.locations(COLLECTION)
-features = locations.get("features", [])
-print(f"{len(features)} measurement locations; first 3:")
-for feat in features[:3]:
-    props = feat.get("properties", {})
-    name = props.get("name") or props.get("label")
-    print(f"  id={feat.get('id')}: {name} at {feat['geometry']['coordinates']}")
-
-# Find De Bilt's station id by name. The id is the GeoJSON feature 'id'
-# (older responses may carry it in properties instead).
-for feat in features:
-    props = feat.get("properties", {})
-    name = str(props.get("name") or props.get("label") or "")
-    if "DE BILT" in name.upper():
-        sid = (
-            feat.get("id")
-            or props.get("id")
-            or props.get("eumetnet:locationId")
-            or props.get("wigosId")
-            or props.get("wmoId")
-        )
-        if sid:
-            de_bilt_id = str(sid)
-        print(f"De Bilt feature properties: {props}")
-print(f"De Bilt station id: {de_bilt_id}")
-
-# %% [markdown]
-# ### Location query: daily time series at De Bilt
-#
-# For station collections, the way to get a time series for one station is
-# `/collections/{id}/locations/{location_id}` with `datetime` and
-# `parameter-name` query params. (Careful: `/position` with a `POINT(lon lat)`
-# coordinate can return HTTP 404 "The query returned no stations" on these
-# collections — use the location query instead.) We ask for the three
-# variables **RH** (precipitation sum), **TG** (mean temperature) and **EV24**
-# (Makkink evaporation); `start_time`/`end_time` become an RFC 3339 interval.
-# The CoverageJSON response is parsed into a dataset where each parameter is a
-# data variable with units and a long name.
-
-# %%
 ts = client.edr.location_data(
     COLLECTION,
     de_bilt_id,
@@ -342,18 +303,24 @@ ts = client.edr.location_data(
     end_time=END,
     parameters=PARAMETERS,
 )
-print(f"Daily time series at De Bilt (station {de_bilt_id}):")
+print(f"Daily time series at station {de_bilt_id}:")
 print(ts)
 
 # %% [markdown]
 # ### Plot the EDR time series
 #
 # The parsed dataset is a plain `xarray.Dataset`, so plotting is one line per
-# variable (needs `matplotlib`, included in the `notebooks` extra).
+# variable (needs `matplotlib`, included in the `notebooks` extra). If the
+# Open Data download above succeeded, its values for the same station are
+# overlaid for comparison.
 
 # %%
 fig, axes = plt.subplots(
-    len(PARAMETERS), 1, figsize=(9, 2.5 * len(PARAMETERS)), sharex=True, layout="tight"
+    len(PARAMETERS),
+    1,
+    figsize=(9, 2.5 * len(PARAMETERS)),
+    sharex=True,
+    layout="tight",
 )
 for ax, var in zip(axes, PARAMETERS, strict=True):
     # drop singleton dims (x, y, station, coverage) so a 1D time series remains
@@ -362,26 +329,65 @@ for ax, var in zip(axes, PARAMETERS, strict=True):
         if d != "time" and da.sizes[d] > 1:
             da = da.isel({d: 0})
     da.plot(ax=ax, marker="o", label="EDR")
-    # overlay the same variable from the downloaded Open Data files, if available
     das = ds.sel(station=de_bilt_id)[var]  # WSI, e.g. '0-20000-0-06260'
-    das.squeeze(drop=True).plot(ax=ax, marker="x", color="C1", label="Open Data")
+    das.squeeze(drop=True).plot(
+        ax=ax, marker="x", color="C1", label="Open Data"
+    )
     ax.legend()
     ax.set_title(
         f"{var} — {da.attrs.get('long_name', var)} ({da.attrs.get('units', '?')})"
     )
     ax.grid(alpha=0.3)
-fig.suptitle(
-    f"Daily values at De Bilt, {START.date()} to {END.date()} (EDR location query)"
-)
-
+fig.suptitle(f"Daily values at De Bilt, {START.date()} to {END.date()}")
+plt.show()
 
 # %% [markdown]
-# ### Area query: all stations in a bounding box
+# ### Method 2: nearest station to coordinates
 #
-# `area` takes a bbox and returns every station inside it (a CoverageCollection
-# of per-station coverages, merged by `knmidata` along the `station` dim).
+# `/locations` returns a GeoJSON FeatureCollection — one feature per station,
+# with coordinates and metadata (the station id is the feature `id`, e.g. the
+# WSI `0-20000-0-06260` for De Bilt). `nearest_location()` picks the closest
+# station client-side (haversine over `/locations`) and always answers.
+# `position(..., coords=...)` is the server-side alternative: it matches the
+# nearest station too, but only within a tolerance and 404s ("no stations")
+# when nothing is close — shown below for comparison.
 
 # %%
+locations = client.edr.locations(COLLECTION)
+features = locations.get("features", [])
+print(f"{len(features)} measurement locations; first 3:")
+for feat in features[:3]:
+    props = feat.get("properties", {})
+    name = props.get("name") or props.get("label")
+    print(f"  id={feat.get('id')}: {name} at {feat['geometry']['coordinates']}")
+
+nearest = client.edr.nearest_location(COLLECTION, coords=STATION_COORDS)
+de_bilt_id = str(nearest["id"])
+print(
+    f"Nearest to {STATION_COORDS}: {nearest['name']} (id={de_bilt_id}, "
+    f"{nearest['distance_km']:.2f} km)"
+)
+
+ts_position = client.edr.position(
+    COLLECTION,
+    coords=STATION_COORDS,
+    start_time=START,
+    end_time=END,
+    parameters=PARAMETERS,
+)
+print("\n/position query (server-side nearest):")
+print(ts_position)
+# %% [markdown]
+# ### Method 3: area — all stations in a bounding box
+#
+# `area` takes a bbox and returns every station inside it (a CoverageCollection
+# of per-station coverages). `knmidata` merges them along a `station` dimension
+# whose coordinate values are the station ids (WSI, e.g. '0-20000-0-06260') with
+# `lon`/`lat` coordinates, so you can always tell which entry belongs to which
+# station: `area["TG"].sel(station="0-20000-0-06260")`.
+
+# %%
+
 area = client.edr.area(
     COLLECTION,
     bbox=NL_BBOX,
@@ -412,4 +418,4 @@ print(area)
 
 # %%
 client.close()
-print("\nDone. Client closed.")
+print("Client closed.")

@@ -1,11 +1,13 @@
 """OGC Environmental Data Retrieval (EDR) query client."""
 
+import math
 from dataclasses import dataclass
 from typing import Any
 
 import httpx
 import xarray as xr
 
+from knmidata._exceptions import KNMIError
 from knmidata._http import AsyncTransport
 from knmidata._time import to_iso8601
 from knmidata._typing import (
@@ -147,6 +149,65 @@ class AsyncEDRClient:
             auth=self.auth,
         )
 
+    @staticmethod
+    def _haversine_km(lon1: float, lat1: float, lon2: float, lat2: float) -> float:
+        """Great-circle distance in km between two (lon, lat) points."""
+        r = 6371.0
+        p1, p2 = math.radians(lat1), math.radians(lat2)
+        dp = math.radians(lat2 - lat1)
+        dl = math.radians(lon2 - lon1)
+        a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+        return 2 * r * math.asin(math.sqrt(a))
+
+    async def nearest_location(
+        self, collection_id: str, coords: Coords
+    ) -> dict[str, Any]:
+        """Find the measurement location nearest to `coords` (client-side).
+
+        `/position` does server-side nearest-station matching but only within a
+        tolerance — it returns HTTP 404 "The query returned no stations" when no
+        station is close enough. This helper always returns the closest station:
+        it fetches `/locations` and computes haversine distances.
+
+        Parameters
+        ----------
+        collection_id : str
+            EDR collection ID.
+        coords : Coords
+            Point coordinates (lon, lat).
+
+        Returns
+        -------
+        dict[str, Any]
+            The nearest location: {'id', 'name', 'coordinates', 'distance_km',
+            'properties'}.
+
+        Raises
+        ------
+        KNMIError
+            If the collection has no locations.
+        """
+        locations = await self.locations(collection_id)
+        lon, lat = coords
+        best: dict[str, Any] | None = None
+        for feat in locations.get("features", []):
+            geom_coords = (feat.get("geometry") or {}).get("coordinates") or []
+            if len(geom_coords) < 2:
+                continue
+            props = feat.get("properties", {})
+            distance = self._haversine_km(lon, lat, geom_coords[0], geom_coords[1])
+            if best is None or distance < best["distance_km"]:
+                best = {
+                    "id": feat.get("id") or props.get("id"),
+                    "name": props.get("name") or props.get("label"),
+                    "coordinates": [geom_coords[0], geom_coords[1]],
+                    "distance_km": distance,
+                    "properties": props,
+                }
+        if best is None:
+            raise KNMIError(f"Collection '{collection_id}' has no locations.")
+        return best
+
     async def location_data(
         self,
         collection_id: str,
@@ -225,9 +286,11 @@ class AsyncEDRClient:
     ) -> xr.Dataset:
         """Query station or point time-series via /collections/{id}/position.
 
-        Note: for station-based collections, /position with a POINT coordinate
-        can return HTTP 404 ("The query returned no stations"); use
-        `location_data()` with a station id from `locations()` instead.
+        Note: /position does server-side nearest-station matching, but only
+        within a tolerance — it returns HTTP 404 ("The query returned no
+        stations") when no station is close enough to the point. For a reliable
+        client-side nearest lookup use `nearest_location()`, then
+        `location_data()` with the returned station id.
 
         Parameters
         ----------
