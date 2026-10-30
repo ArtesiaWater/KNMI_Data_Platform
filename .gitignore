@@ -94,5 +94,6 @@ tempCodeRunnerFile.py
 .ruff_cache/
 
 # Own files
+uv.lock
 *.nc
 *.env
