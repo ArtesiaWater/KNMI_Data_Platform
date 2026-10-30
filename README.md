@@ -62,13 +62,13 @@ Time arguments accept `str`, `pandas.Timestamp`, `datetime`, or `date` (exported
 import knmidata
 
 async with knmidata.AsyncKNMIClient() as client:
-    files = await client.catalog.list_files(
+    files = await client.opendata.list_files(
         "10-minute-in-situ-meteorological-observations",
         "1.0",
         start_time="2024-06-01T00:00:00Z",
         end_time="2024-06-02T00:00:00Z",
     )
-    ds = await client.open_dataset(
+    ds = await client.opendata.open_dataset(
         "10-minute-in-situ-meteorological-observations",
         "1.0",
         start_time="2024-06-01T00:00:00Z",
@@ -108,7 +108,7 @@ with knmidata.KNMIClient() as client:
 import knmidata
 
 with knmidata.KNMIClient() as client:
-    ds = client.open_dataset(
+    ds = client.opendata.open_dataset(
         "daily-in-situ-meteorological-observations",
         "1.0",
         start_time="2024-01-01T00:00:00Z",

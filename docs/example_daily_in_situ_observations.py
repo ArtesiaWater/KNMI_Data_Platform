@@ -204,7 +204,7 @@ except knmidata.KNMIAuthError as exc:
 # %%
 if client_ok:
     try:
-        files = client.catalog.list_files(
+        files = client.opendata.list_files(
             DATASET_NAME,
             DATASET_VERSION,
             start_time=START,
@@ -230,7 +230,7 @@ if client_ok:
 ds = None
 if client_ok:
     try:
-        ds = client.open_dataset(
+        ds = client.opendata.open_dataset(
             DATASET_NAME,
             DATASET_VERSION,
             start_time=START,
@@ -382,9 +382,20 @@ if ts is not None:
         for d in list(da.dims):
             if d != "time" and da.sizes[d] > 1:
                 da = da.isel({d: 0})
-        da.plot(ax=ax, marker="o")
-        das = ds.sel(station=de_bilt_id)[var].squeeze(drop=True)
-        das.plot(ax=ax, marker="x", color="C1", label="Open Data")
+        da.plot(ax=ax, marker="o", label="EDR")
+        # overlay the same variable from the downloaded Open Data files, if available
+        if ds is not None and var in ds.data_vars and "station" in ds.coords:
+            try:
+                das = ds.sel(station=de_bilt_id)[var]  # WSI, e.g. '0-20000-0-06260'
+            except (KeyError, ValueError):
+                try:
+                    das = ds.sel(station=int(de_bilt_id.split("-")[-1]))[var]  # WMO 260
+                except (KeyError, ValueError):
+                    das = ds[var].isel(station=0)
+            das.squeeze(drop=True).plot(
+                ax=ax, marker="x", color="C1", label="Open Data"
+            )
+        ax.legend()
         ax.set_title(
             f"{var} — {da.attrs.get('long_name', var)} ({da.attrs.get('units', '?')})"
         )

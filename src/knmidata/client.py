@@ -1,8 +1,18 @@
-"""Composition roots and client facades for asynchronous and synchronous workflows."""
+"""Composition roots and client facades for asynchronous and synchronous workflows.
+
+The clients expose one namespace per KNMI API, symmetric for async and sync use::
+
+    async with AsyncKNMIClient() as client:
+        ds = await client.opendata.open_dataset("dataset", "1.0", ...)
+        ts = await client.edr.location_data("collection", "06260", ...)
+
+    with KNMIClient() as client:  # same, but blocking
+        ds = client.opendata.open_dataset("dataset", "1.0", ...)
+        ts = client.edr.location_data("collection", "06260", ...)
+"""
 
 import asyncio
 import inspect
-import tempfile
 import threading
 from collections.abc import Coroutine
 from typing import Any, Self
@@ -10,16 +20,22 @@ from typing import Any, Self
 import xarray as xr
 
 from knmidata._auth import resolve_edr_auth, resolve_open_data_auth
-from knmidata._exceptions import NoFilesFoundError
 from knmidata._http import AsyncTransport
 from knmidata._typing import PathLike, RunCoroutine, T, TimeLike
 from knmidata.edr.client import AsyncEDRClient
-from knmidata.opendata.catalog import AsyncCatalogClient
-from knmidata.opendata.download import AsyncFileDownloader, files_to_dataset
+from knmidata.opendata.client import AsyncOpenDataClient
 
 
 class AsyncKNMIClient:
     """Asynchronous client composing all KNMI Data Platform API sub-services.
+
+    Attributes
+    ----------
+    opendata : AsyncOpenDataClient
+        Open Data API namespace: `list_files`, `download_files`, `open_dataset`, ...
+    edr : AsyncEDRClient
+        EDR API namespace: `collections`, `locations`, `location_data`, `position`,
+        `area`, `cube`, ... (authentication resolved lazily on first access).
 
     Parameters
     ----------
@@ -50,17 +66,13 @@ class AsyncKNMIClient:
         self._transport = AsyncTransport(
             max_concurrency=max_concurrency, timeout=timeout, max_retries=max_retries
         )
-
         open_data_auth = resolve_open_data_auth(api_key)
-        self._catalog = AsyncCatalogClient(
-            transport=self._transport, auth=open_data_auth
-        )
-        self._downloader = AsyncFileDownloader(
+        self._opendata = AsyncOpenDataClient(
             transport=self._transport, auth=open_data_auth
         )
 
         # Lazy-resolve EDR auth so clients using only Open Data don't error if no EDR key is set
-        self._edr_key = edr_key or api_key
+        self._edr_key = edr_key
         self._edr_client: AsyncEDRClient | None = None
 
     @property
@@ -69,18 +81,13 @@ class AsyncKNMIClient:
         return self._transport
 
     @property
-    def catalog(self) -> AsyncCatalogClient:
-        """The Open Data catalog client."""
-        return self._catalog
-
-    @property
-    def downloader(self) -> AsyncFileDownloader:
-        """The Open Data file downloader."""
-        return self._downloader
+    def opendata(self) -> AsyncOpenDataClient:
+        """The Open Data API namespace."""
+        return self._opendata
 
     @property
     def edr(self) -> AsyncEDRClient:
-        """Access the EDR client, lazily initializing its authentication."""
+        """The EDR API namespace, lazily initializing its authentication."""
         if self._edr_client is None:
             edr_auth = resolve_edr_auth(self._edr_key)
             self._edr_client = AsyncEDRClient(transport=self._transport, auth=edr_auth)
@@ -97,75 +104,17 @@ class AsyncKNMIClient:
         max_files: int | None = None,
         **open_dataset_kwargs: Any,
     ) -> xr.Dataset:
-        """Download matching archive files via Open Data and assemble an xarray.Dataset.
-
-        Parameters
-        ----------
-        dataset_name : str
-            KNMI dataset name.
-        dataset_version : str
-            Dataset version identifier.
-        start_time : str | None, default=None
-            Start timestamp (TimeLike: ISO-8601 string, pandas Timestamp,
-            datetime, or date; naive values are assumed UTC).
-        end_time : str | None, default=None
-            End timestamp (TimeLike, see start_time).
-        cache_dir : PathLike | None, default=None
-            Local folder where downloaded NetCDF/HDF5 files are preserved and the
-            dataset is opened lazily. If None, files are downloaded to a temporary
-            directory, loaded into memory, and removed again.
-        file_pattern : str | None, default=None
-            Optional regular expression to keep only matching file names.
-        max_files : int | None, default=None
-            Maximum number of files to download (after listing, ascending order).
-        **open_dataset_kwargs : Any
-            Additional keyword arguments passed to `xarray.open_dataset` per file.
-
-        Returns
-        -------
-        xr.Dataset
-            Combined multidimensional dataset.
-
-        Raises
-        ------
-        NoFilesFoundError
-            If the query matches no files.
-        """
-        files = await self._catalog.list_files(
+        """Shortcut for `client.opendata.open_dataset(...)`."""
+        return await self._opendata.open_dataset(
             dataset_name=dataset_name,
             dataset_version=dataset_version,
             start_time=start_time,
             end_time=end_time,
+            cache_dir=cache_dir,
             file_pattern=file_pattern,
+            max_files=max_files,
+            **open_dataset_kwargs,
         )
-        if max_files is not None:
-            files = files[:max_files]
-        if not files:
-            raise NoFilesFoundError(
-                f"No files found for dataset '{dataset_name}' (v{dataset_version}) "
-                f"between {start_time} and {end_time}."
-            )
-
-        if cache_dir is None:
-            with tempfile.TemporaryDirectory(prefix="knmi_") as tmp:
-                paths = await self._downloader.download_files(
-                    dataset_name=dataset_name,
-                    dataset_version=dataset_version,
-                    filenames=files,
-                    destination_dir=tmp,
-                )
-                dataset = files_to_dataset(paths, **open_dataset_kwargs)
-                dataset.load()
-                dataset.close()
-                return dataset
-
-        paths = await self._downloader.download_files(
-            dataset_name=dataset_name,
-            dataset_version=dataset_version,
-            filenames=files,
-            destination_dir=cache_dir,
-        )
-        return files_to_dataset(paths, **open_dataset_kwargs)
 
     async def aclose(self) -> None:
         """Close the underlying HTTP transport session."""
@@ -212,6 +161,13 @@ class KNMIClient:
     All coroutines are executed on a dedicated background event loop in a
     separate thread, so the client can be called repeatedly (and from inside
     environments that already run an event loop, such as Jupyter).
+
+    Attributes
+    ----------
+    opendata : _SyncFacade
+        Synchronous facade for the Open Data API namespace.
+    edr : _SyncFacade
+        Synchronous facade for the EDR API namespace.
 
     Parameters
     ----------
@@ -261,6 +217,16 @@ class KNMIClient:
         """
         return asyncio.run_coroutine_threadsafe(coro, self._loop).result()
 
+    @property
+    def opendata(self) -> _SyncFacade:
+        """Synchronous facade for the Open Data API namespace."""
+        return _SyncFacade(self._run, self._async_client.opendata)
+
+    @property
+    def edr(self) -> _SyncFacade:
+        """Synchronous facade for the EDR API namespace."""
+        return _SyncFacade(self._run, self._async_client.edr)
+
     def open_dataset(
         self,
         dataset_name: str,
@@ -272,12 +238,9 @@ class KNMIClient:
         max_files: int | None = None,
         **open_dataset_kwargs: Any,
     ) -> xr.Dataset:
-        """Download Open Data files and return an xarray.Dataset synchronously.
-
-        See `AsyncKNMIClient.open_dataset` for parameter descriptions.
-        """
+        """Shortcut for `client.opendata.open_dataset(...)` (synchronous)."""
         return self._run(
-            self._async_client.open_dataset(
+            self._async_client.opendata.open_dataset(
                 dataset_name=dataset_name,
                 dataset_version=dataset_version,
                 start_time=start_time,
@@ -288,21 +251,6 @@ class KNMIClient:
                 **open_dataset_kwargs,
             )
         )
-
-    @property
-    def catalog(self) -> _SyncFacade:
-        """Synchronous facade for the Open Data catalog client."""
-        return _SyncFacade(self._run, self._async_client.catalog)
-
-    @property
-    def downloader(self) -> _SyncFacade:
-        """Synchronous facade for the Open Data file downloader."""
-        return _SyncFacade(self._run, self._async_client.downloader)
-
-    @property
-    def edr(self) -> _SyncFacade:
-        """Synchronous facade for the EDR client."""
-        return _SyncFacade(self._run, self._async_client.edr)
 
     def close(self) -> None:
         """Close the underlying connection pool and stop the background loop."""
@@ -341,10 +289,10 @@ def open_dataset(
         KNMI dataset name.
     dataset_version : str
         Dataset version identifier.
-    start_time : str | None, default=None
-        Start timestamp filter (TimeLike: ISO-8601 string, pandas Timestamp,
-        datetime, or date; naive values are assumed UTC).
-    end_time : str | None, default=None
+    start_time : TimeLike | None, default=None
+        Start timestamp filter (ISO-8601 string, pandas Timestamp, datetime, or
+        date; naive values are assumed UTC).
+    end_time : TimeLike | None, default=None
         End timestamp filter (TimeLike, see start_time).
     api_key : str | None, default=None
         Optional KNMI Open Data API key. Falls back to environment variables and
@@ -365,7 +313,7 @@ def open_dataset(
         Multidimensional dataset.
     """
     with KNMIClient(api_key=api_key) as client:
-        return client.open_dataset(
+        return client.opendata.open_dataset(
             dataset_name=dataset_name,
             dataset_version=dataset_version,
             start_time=start_time,

@@ -145,15 +145,18 @@ def test_sync_catalog_and_downloader_facades(netcdf_bytes, tmp_path):
             return_value=httpx.Response(200, content=netcdf_bytes)
         )
         with knmidata.KNMIClient(api_key="key") as client:
-            files = client.catalog.list_files("ds", "1.0")
+            files = client.opendata.list_files("ds", "1.0")
             assert files == ["f1.nc"]
-            info = client.downloader.get_download_info("ds", "1.0", "f1.nc")
+            info = client.opendata.get_download_info("ds", "1.0", "f1.nc")
             assert info.url == f"{S3}/f1.nc"
-            paths = client.downloader.download_files(
+            paths = client.opendata.download_files(
                 "ds", "1.0", files, destination_dir=tmp_path / "out"
             )
             assert (tmp_path / "out" / "f1.nc").exists()
             assert paths[0].name == "f1.nc"
+            # the raw sub-clients are still reachable for advanced use
+            assert client.opendata.catalog is not None
+            assert client.opendata.downloader is not None
 
 
 def test_sync_edr_facade(netcdf_bytes):
