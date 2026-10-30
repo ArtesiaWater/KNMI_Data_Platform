@@ -10,14 +10,14 @@ import respx
 from knmidata._auth import APIKeyAuth
 from knmidata._exceptions import KNMIAuthError, KNMIError
 from knmidata.config import OPENDATA_BASE_URL as OPENDATA
-from knmidata.opendata.catalog import AsyncCatalogClient
+from knmidata.opendata.client import AsyncOpenDataClient
 
 FILES_URL = f"{OPENDATA}/datasets/ds/versions/1.0/files"
 
 
 @pytest.fixture
 def catalog(transport):
-    return AsyncCatalogClient(transport=transport, auth=APIKeyAuth(api_key="key"))
+    return AsyncOpenDataClient(transport=transport, auth=APIKeyAuth(api_key="key"))
 
 
 def _page(filenames, token="", truncated=False):

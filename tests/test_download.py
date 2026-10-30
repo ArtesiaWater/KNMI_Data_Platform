@@ -9,14 +9,15 @@ import xarray as xr
 from knmidata._auth import APIKeyAuth
 from knmidata._exceptions import KNMIError
 from knmidata.config import OPENDATA_BASE_URL as OPENDATA
-from knmidata.opendata.download import AsyncFileDownloader, files_to_dataset
+from knmidata.opendata.client import AsyncOpenDataClient
+from knmidata.opendata.download import files_to_dataset
 
 S3 = "https://fake-s3.amazonaws.com"
 
 
 @pytest.fixture
 def downloader(transport):
-    return AsyncFileDownloader(transport=transport, auth=APIKeyAuth(api_key="key"))
+    return AsyncOpenDataClient(transport=transport, auth=APIKeyAuth(api_key="key"))
 
 
 def _url_payload(filename, size):

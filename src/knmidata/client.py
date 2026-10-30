@@ -29,9 +29,7 @@ from knmidata._typing import (
     TimeLike,
 )
 from knmidata.edr.client import AsyncEDRClient
-from knmidata.opendata.catalog import AsyncCatalogClient
 from knmidata.opendata.client import AsyncOpenDataClient
-from knmidata.opendata.download import AsyncFileDownloader
 
 
 class AsyncKNMIClient:
@@ -150,7 +148,7 @@ class _SyncFacade:
     Coroutine methods are bound as real attributes at construction time (with
     `functools.wraps`, so `__doc__`/`__name__`/`__wrapped__` and the signature are
     preserved), which makes runtime tab-completion (`dir()`) and `help()` work.
-    Nested sub-clients (e.g. `client.opendata.catalog`) are wrapped recursively.
+    Nested sub-clients (e.g. `client.edr`) are wrapped recursively.
 
     Parameters
     ----------
@@ -161,8 +159,6 @@ class _SyncFacade:
     """
 
     _FACADE_TARGETS: ClassVar[tuple[type, ...]] = (
-        AsyncCatalogClient,
-        AsyncFileDownloader,
         AsyncEDRClient,
         AsyncOpenDataClient,
     )

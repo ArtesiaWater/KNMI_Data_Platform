@@ -154,9 +154,6 @@ def test_sync_catalog_and_downloader_facades(netcdf_bytes, tmp_path):
             )
             assert (tmp_path / "out" / "f1.nc").exists()
             assert paths[0].name == "f1.nc"
-            # the raw sub-clients are still reachable for advanced use
-            assert client.opendata.catalog is not None
-            assert client.opendata.downloader is not None
 
 
 def test_sync_facade_completion_and_docstrings():
@@ -180,10 +177,10 @@ def test_sync_facade_completion_and_docstrings():
         assert list(facade_sig.parameters) == list(async_sig.parameters)[1:]
         assert facade_sig.return_annotation == async_sig.return_annotation
         assert facade.position.__wrapped__ is not None
-        # nested sub-clients are wrapped recursively
-        assert isinstance(client.opendata.catalog, _SyncFacade)
-        assert "list_files" in dir(client.opendata.catalog)
-        assert client.opendata.catalog.list_files.__doc__
+        # the opendata namespace methods are bound on the facade too
+        assert "list_files" in dir(client.opendata)
+        assert "open_dataset" in dir(client.opendata)
+        assert client.opendata.list_files.__doc__
 
 
 def test_sync_edr_facade(netcdf_bytes):

@@ -330,9 +330,7 @@ for ax, var in zip(axes, PARAMETERS, strict=True):
             da = da.isel({d: 0})
     da.plot(ax=ax, marker="o", label="EDR")
     das = ds.sel(station=de_bilt_id)[var]  # WSI, e.g. '0-20000-0-06260'
-    das.squeeze(drop=True).plot(
-        ax=ax, marker="x", color="C1", label="Open Data"
-    )
+    das.squeeze(drop=True).plot(ax=ax, marker="x", color="C1", label="Open Data")
     ax.legend()
     ax.set_title(
         f"{var} — {da.attrs.get('long_name', var)} ({da.attrs.get('units', '?')})"
