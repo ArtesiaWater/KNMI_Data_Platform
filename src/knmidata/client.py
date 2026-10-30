@@ -22,12 +22,11 @@ from typing import Any, ClassVar, Self
 import xarray as xr
 
 from knmidata._auth import resolve_edr_auth, resolve_open_data_auth
+from knmidata._exceptions import KNMIError
 from knmidata._http import AsyncTransport
 from knmidata._typing import (
-    PathLike,
     RunCoroutine,
     T,
-    TimeLike,
 )
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.opendata.client import AsyncOpenDataClient
@@ -103,26 +102,16 @@ class AsyncKNMIClient:
         return self._edr_client
 
     async def open_dataset(
-        self,
-        dataset_name: str,
-        dataset_version: str,
-        start_time: TimeLike | None = None,
-        end_time: TimeLike | None = None,
-        cache_dir: PathLike | None = None,
-        file_pattern: str | None = None,
-        max_files: int | None = None,
-        **open_dataset_kwargs: Any,
+        self, dataset_name: str, dataset_version: str, **kwargs: Any
     ) -> xr.Dataset:
-        """Shortcut for `client.opendata.open_dataset(...)`."""
+        """Shortcut for `client.opendata.open_dataset(...)`.
+
+        See `AsyncOpenDataClient.open_dataset` for the full parameter list
+        (start_time, end_time, cache_dir, file_pattern, max_files, engine,
+        combine, concat_dim, and per-file `xarray.open_dataset` kwargs).
+        """
         return await self._opendata.open_dataset(
-            dataset_name=dataset_name,
-            dataset_version=dataset_version,
-            start_time=start_time,
-            end_time=end_time,
-            cache_dir=cache_dir,
-            file_pattern=file_pattern,
-            max_files=max_files,
-            **open_dataset_kwargs,
+            dataset_name, dataset_version, **kwargs
         )
 
     def __repr__(self) -> str:
@@ -266,6 +255,8 @@ class KNMIClient:
             timeout=timeout,
             max_retries=max_retries,
         )
+        self._opendata_facade: _SyncFacade | None = None
+        self._edr_facade: _SyncFacade | None = None
 
     def _run(self, coro: Coroutine[Any, Any, T]) -> T:
         """Run a coroutine on the background loop and block until it completes.
@@ -273,40 +264,38 @@ class KNMIClient:
         This makes an async client usable in synchronous code, including
         environments that already run an event loop.
         """
+        if self._closed:
+            coro.close()
+            raise KNMIError("KNMIClient is closed; create a new client.")
         return asyncio.run_coroutine_threadsafe(coro, self._loop).result()
 
     @property
     def opendata(self) -> _SyncFacade:
-        """Synchronous facade for the Open Data API namespace."""
-        return _SyncFacade(self._run, self._async_client.opendata)
+        """Synchronous facade for the Open Data API namespace (cached)."""
+        if self._opendata_facade is None:
+            self._opendata_facade = _SyncFacade(self._run, self._async_client.opendata)
+        return self._opendata_facade
 
     @property
     def edr(self) -> _SyncFacade:
-        """Synchronous facade for the EDR API namespace."""
-        return _SyncFacade(self._run, self._async_client.edr)
+        """Synchronous facade for the EDR API namespace (cached).
+
+        EDR auth is resolved lazily on first access.
+        """
+        if self._edr_facade is None:
+            self._edr_facade = _SyncFacade(self._run, self._async_client.edr)
+        return self._edr_facade
 
     def open_dataset(
-        self,
-        dataset_name: str,
-        dataset_version: str,
-        start_time: TimeLike | None = None,
-        end_time: TimeLike | None = None,
-        cache_dir: PathLike | None = None,
-        file_pattern: str | None = None,
-        max_files: int | None = None,
-        **open_dataset_kwargs: Any,
+        self, dataset_name: str, dataset_version: str, **kwargs: Any
     ) -> xr.Dataset:
-        """Shortcut for `client.opendata.open_dataset(...)` (synchronous)."""
+        """Shortcut for `client.opendata.open_dataset(...)` (synchronous).
+
+        See `AsyncOpenDataClient.open_dataset` for the full parameter list.
+        """
         return self._run(
             self._async_client.opendata.open_dataset(
-                dataset_name=dataset_name,
-                dataset_version=dataset_version,
-                start_time=start_time,
-                end_time=end_time,
-                cache_dir=cache_dir,
-                file_pattern=file_pattern,
-                max_files=max_files,
-                **open_dataset_kwargs,
+                dataset_name, dataset_version, **kwargs
             )
         )
 
@@ -318,11 +307,15 @@ class KNMIClient:
         """Close the underlying connection pool and stop the background loop."""
         if self._closed:
             return
-        self._closed = True
-        self._run(self._async_client.aclose())
-        self._loop.call_soon_threadsafe(self._loop.stop)
-        self._thread.join(timeout=10.0)
-        logger.debug("KNMIClient: closed (transport closed, background loop stopped)")
+        try:
+            self._run(self._async_client.aclose())
+        finally:
+            self._closed = True
+            self._loop.call_soon_threadsafe(self._loop.stop)
+            self._thread.join(timeout=10.0)
+            logger.debug(
+                "KNMIClient: closed (transport closed, background loop stopped)"
+            )
 
     def __enter__(self) -> Self:
         """Context manager entry."""
@@ -336,13 +329,8 @@ class KNMIClient:
 def open_dataset(
     dataset_name: str,
     dataset_version: str,
-    start_time: TimeLike | None = None,
-    end_time: TimeLike | None = None,
     api_key: str | None = None,
-    cache_dir: PathLike | None = None,
-    file_pattern: str | None = None,
-    max_files: int | None = None,
-    **open_dataset_kwargs: Any,
+    **kwargs: Any,
 ) -> xr.Dataset:
     """One-line convenience function to synchronously download and open Open Data files.
 
@@ -352,23 +340,13 @@ def open_dataset(
         KNMI dataset name.
     dataset_version : str
         Dataset version identifier.
-    start_time : TimeLike | None, default=None
-        Start timestamp filter (ISO-8601 string, pandas Timestamp, datetime, or
-        date; naive values are assumed UTC).
-    end_time : TimeLike | None, default=None
-        End timestamp filter (TimeLike, see start_time).
     api_key : str | None, default=None
         Optional KNMI Open Data API key. Falls back to environment variables and
         the public anonymous key if omitted.
-    cache_dir : PathLike | None, default=None
-        Directory to store downloaded files. If None, files are removed after
-        the dataset is loaded into memory.
-    file_pattern : str | None, default=None
-        Optional regular expression to keep only matching file names.
-    max_files : int | None, default=None
-        Maximum number of files to download.
-    **open_dataset_kwargs : Any
-        Forwarded to `xarray.open_dataset` per file.
+    **kwargs : Any
+        Forwarded to `AsyncOpenDataClient.open_dataset`: start_time, end_time,
+        cache_dir, file_pattern, max_files, engine, combine, concat_dim, and
+        per-file `xarray.open_dataset` keyword arguments.
 
     Returns
     -------
@@ -376,13 +354,4 @@ def open_dataset(
         Multidimensional dataset.
     """
     with KNMIClient(api_key=api_key) as client:
-        return client.opendata.open_dataset(
-            dataset_name=dataset_name,
-            dataset_version=dataset_version,
-            start_time=start_time,
-            end_time=end_time,
-            cache_dir=cache_dir,
-            file_pattern=file_pattern,
-            max_files=max_files,
-            **open_dataset_kwargs,
-        )
+        return client.opendata.open_dataset(dataset_name, dataset_version, **kwargs)

@@ -66,11 +66,19 @@ class AsyncTransport:
         except httpx.ResponseNotRead:
             return ""
 
+    @staticmethod
+    def _sanitize_url(url: str) -> str:
+        """Strip the query string: presigned URLs carry their signature there."""
+        return url.split("?")[0]
+
     @classmethod
     def _raise_for_status(cls, response: httpx.Response) -> None:
         """Map an HTTP error response onto the knmidata exception hierarchy."""
         if response.status_code < 400:
             return
+        # never put the full URL in a message or exception: the query string of
+        # a presigned URL is a credential
+        url = cls._sanitize_url(str(response.url))
         body = cls._response_text(response)
         try:
             message = api_error_message(response.json())
@@ -79,18 +87,17 @@ class AsyncTransport:
         detail = message or body
         if response.status_code in (401, 403):
             raise KNMIAuthError(
-                f"KNMI API rejected the API key for {response.url} "
+                f"KNMI API rejected the API key for {url} "
                 f"(HTTP {response.status_code}): {detail[:500]}. "
                 "Request a key at https://developer.dataplatform.knmi.nl/ and pass it "
-                "via `api_key`/`edr_key` or the KNMI_API_KEY / KNMI_EDR_API_KEY "
-                "environment variables."
+                "via `api_key`/`edr_key` or the KNMI_OPENDATA_API_KEY / "
+                "KNMI_EDR_API_KEY environment variables."
             )
-        if response.status_code >= 400:
-            raise KNMIHTTPError(
-                status_code=response.status_code,
-                url=str(response.url),
-                body=detail,
-            )
+        raise KNMIHTTPError(
+            status_code=response.status_code,
+            url=url,
+            body=detail,
+        )
 
     async def _backoff_delay(
         self, attempt: int, response: httpx.Response | None
@@ -137,7 +144,8 @@ class AsyncTransport:
         """
         # NOTE: never log request headers (they carry the API key) or presigned
         # URL query strings (they carry the S3 signature); log URL + params only.
-        logger.debug("HTTP %s %s params=%s", method, url, kwargs.get("params"))
+        safe_url = self._sanitize_url(url)
+        logger.debug("HTTP %s %s params=%s", method, safe_url, kwargs.get("params"))
         for attempt in range(self.max_retries + 1):
             try:
                 async with self.semaphore:
@@ -149,15 +157,15 @@ class AsyncTransport:
                     logger.error(
                         "HTTP %s %s failed after %d attempts: %s",
                         method,
-                        url,
+                        safe_url,
                         attempt + 1,
                         exc,
                     )
-                    raise KNMIHTTPError(0, url, f"Transport error: {exc}") from exc
+                    raise KNMIHTTPError(0, safe_url, f"Transport error: {exc}") from exc
                 logger.warning(
                     "Transport error on %s %s (attempt %d/%d): %s — retrying",
                     method,
-                    url,
+                    safe_url,
                     attempt + 1,
                     self.max_retries + 1,
                     exc,
@@ -165,14 +173,14 @@ class AsyncTransport:
                 await asyncio.sleep(await self._backoff_delay(attempt, None))
                 continue
 
-            logger.debug("HTTP %s %s -> %d", method, url, response.status_code)
+            logger.debug("HTTP %s %s -> %d", method, safe_url, response.status_code)
             retryable = response.status_code in RETRYABLE_STATUS_CODES
             if not retryable or attempt >= self.max_retries:
                 if response.status_code >= 400:
                     logger.error(
                         "HTTP %s %s -> %d: %s",
                         method,
-                        url,
+                        safe_url,
                         response.status_code,
                         self._response_text(response)[:200],
                     )
@@ -182,13 +190,15 @@ class AsyncTransport:
                 "Retryable HTTP %d on %s %s (attempt %d/%d) — retrying",
                 response.status_code,
                 method,
-                url,
+                safe_url,
                 attempt + 1,
                 self.max_retries + 1,
             )
+            # httpx reads non-streaming bodies eagerly, so the connection is
+            # already back in the pool; just wait before the next attempt
             await asyncio.sleep(await self._backoff_delay(attempt, response))
 
-        raise KNMIHTTPError(0, url, "Request failed without a response.")
+        raise KNMIHTTPError(0, safe_url, "Request failed without a response.")
 
     async def get_json(
         self,
@@ -239,13 +249,14 @@ class AsyncTransport:
             The open response stream.
         """
         # log host+path only: the query string of a presigned URL is a credential
-        logger.debug("HTTP %s %s (stream)", method, url.split("?")[0])
+        safe_url = self._sanitize_url(url)
+        logger.debug("HTTP %s %s (stream)", method, safe_url)
         stream_ctx = self.client.stream(method, url, auth=auth, **kwargs)
         async with self.semaphore, stream_ctx as response:
             logger.debug(
                 "HTTP %s %s -> %d (stream)",
                 method,
-                url.split("?")[0],
+                safe_url,
                 response.status_code,
             )
             if response.status_code >= 400:
@@ -254,7 +265,7 @@ class AsyncTransport:
                 logger.error(
                     "HTTP %s %s -> %d: %s",
                     method,
-                    url.split("?")[0],
+                    safe_url,
                     response.status_code,
                     self._response_text(response)[:200],
                 )

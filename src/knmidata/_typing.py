@@ -4,7 +4,7 @@ All custom type hints live here so they have a single definition site.
 This module must not import other knmidata modules (no circular imports).
 """
 
-from collections.abc import Callable, Coroutine, Generator
+from collections.abc import Callable, Coroutine, Generator, Sequence
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Literal, TypeAlias, TypeVar
@@ -22,8 +22,8 @@ TimeLike: TypeAlias = str | pd.Timestamp | datetime | date
 PathLike: TypeAlias = str | Path
 """Anything path-like: a string or pathlib.Path."""
 
-FilePaths: TypeAlias = list[Path] | list[str]
-"""A list of file paths."""
+FilePaths: TypeAlias = Sequence[PathLike]
+"""A sequence of file paths (strings and/or pathlib.Path, mixed allowed)."""
 
 # --- EDR query shapes -------------------------------------------------------
 Coords: TypeAlias = tuple[float, float]

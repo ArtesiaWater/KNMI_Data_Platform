@@ -157,6 +157,31 @@ async def test_start_after_end_raises(catalog):
         )
 
 
+async def test_list_files_max_files_stops_pagination_early(catalog):
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(FILES_URL).mock(
+            side_effect=[
+                httpx.Response(
+                    200,
+                    json=_page(["a.nc", "b.nc", "c.nc"], token="tok", truncated=True),
+                ),
+                httpx.Response(200, json=_page(["d.nc"])),
+            ]
+        )
+        files = await catalog.list_files("ds", "1.0", max_files=2)
+        assert files == ["a.nc", "b.nc"]
+        assert route.call_count == 1  # second page never fetched
+
+
+async def test_list_files_clamps_max_keys_to_api_max(catalog):
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(FILES_URL).mock(
+            return_value=httpx.Response(200, json=_page([]))
+        )
+        await catalog.list_files("ds", "1.0", max_keys=5000)
+        assert route.calls[0].request.url.params["maxKeys"] == "1000"
+
+
 async def test_403_raises_auth_error(catalog):
     with respx.mock(assert_all_called=False) as router:
         router.get(FILES_URL).mock(return_value=httpx.Response(403, text="forbidden"))

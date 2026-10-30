@@ -27,11 +27,16 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Hydrology",
     "Typing :: Typed",
 ]
-dependencies = ["httpx>=0.24.0", "xarray>=2023.1.0", "h5netcdf[h5py]>=1.4.0"]
+dependencies = [
+    "httpx>=0.24.0",
+    "numpy>=2.0.0",
+    "pandas>=2.0.0",
+    "xarray>=2023.1.0",
+    "h5netcdf[h5py]>=1.4.0",
+]
 
 [project.optional-dependencies]
 testing = ["pytest", "pytest-asyncio", "pytest-cov", "respx", "ruff", "ty"]
-dotenv = ["python-dotenv>=1.0.0"]
 notebooks = [
     "jupytext>=1.16",
     "nbclient>=0.10",
@@ -39,9 +44,8 @@ notebooks = [
     "matplotlib>=3.8",
 ]
 dev = [
-    "knmidata[testing]",
-    "knmidata[dotenv]",
-    "knmidata[notebooks]",
+    "knmidata[testing,notebooks]",
+    "python-dotenv>=1.0.0",
     "pre-commit",
     "tox-uv>=1.0",
 ]

@@ -6,4 +6,4 @@ EDR_BASE_URL = "https://api.dataplatform.knmi.nl/edr/v1"
 # The anonymous Open Data API key is published (and rotated yearly) on this page.
 ANONYMOUS_KEY_DOCS_URL = "https://developer.dataplatform.knmi.nl/open-data-api"
 
-RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}

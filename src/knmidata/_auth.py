@@ -246,4 +246,3 @@ def resolve_edr_auth(api_key: str | None = None) -> httpx.Auth:
         "(or KNMI_EDR_API_KEY_FILE pointing to a file with the key). "
         "Request a key at https://developer.dataplatform.knmi.nl/."
     )
-    return APIKeyAuth(api_key=resolved)

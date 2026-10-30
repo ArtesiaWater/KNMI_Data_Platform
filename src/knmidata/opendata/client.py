@@ -16,7 +16,7 @@ import xarray as xr
 from knmidata._exceptions import KNMIError, NoFilesFoundError
 from knmidata._http import AsyncTransport
 from knmidata._time import to_iso8601
-from knmidata._typing import PathLike, QueryParams, TimeLike
+from knmidata._typing import CombineMethod, PathLike, QueryParams, TimeLike
 from knmidata.config import OPENDATA_BASE_URL
 from knmidata.opendata.parsers import files_to_dataset
 
@@ -61,6 +61,7 @@ class AsyncOpenDataClient:
         sorting: str | None = None,
         order_by: str | None = None,
         file_pattern: str | None = None,
+        max_files: int | None = None,
     ) -> list[str]:
         """Fetch matching file names from the catalog, handling pagination automatically.
 
@@ -78,7 +79,8 @@ class AsyncOpenDataClient:
         end_time : TimeLike | None, default=None
             End timestamp filter.
         max_keys : int, default=1000
-            Number of keys to request per pagination batch (API maximum is 1000).
+            Number of keys to request per pagination batch. Clamped to the API
+            maximum of 1000.
         sorting : str | None, default=None
             'asc' or 'desc'.
         order_by : str | None, default=None
@@ -90,6 +92,9 @@ class AsyncOpenDataClient:
         file_pattern : str | None, default=None
             Optional regular expression applied client-side to keep only matching
             file names.
+        max_files : int | None, default=None
+            Stop paginating once this many matching files have been collected
+            (after client-side pattern filtering).
 
         Returns
         -------
@@ -110,6 +115,7 @@ class AsyncOpenDataClient:
             raise ValueError(f"start_time ({begin}) is after end_time ({end}).")
         if (begin or end) and order_by is None:
             order_by = "lastModified"
+        max_keys = max(1, min(max_keys, 1000))
 
         pattern = re.compile(file_pattern) if file_pattern else None
         filenames: list[str] = []
@@ -152,6 +158,8 @@ class AsyncOpenDataClient:
                 if name and (pattern is None or pattern.search(name)):
                     filenames.append(name)
 
+            if max_files is not None and len(filenames) >= max_files:
+                break
             next_page_token = payload.get("nextPageToken")
             if not next_page_token or not payload.get("isTruncated", False):
                 break
@@ -163,6 +171,8 @@ class AsyncOpenDataClient:
             seen_tokens.add(next_page_token)
 
         result = list(dict.fromkeys(filenames))
+        if max_files is not None:
+            result = result[:max_files]
         logger.info(
             "Found %d unique files for dataset '%s' v%s",
             len(result),
@@ -240,7 +250,8 @@ class AsyncOpenDataClient:
         async with self.transport.stream("GET", url) as stream:
             with part_path.open("wb") as f:
                 async for chunk in stream.aiter_bytes(chunk_size=1024 * 64):
-                    f.write(chunk)
+                    # keep blocking disk I/O off the event loop
+                    await asyncio.to_thread(f.write, chunk)
 
         downloaded = part_path.stat().st_size
         if expected_size is not None and downloaded != expected_size:
@@ -344,6 +355,9 @@ class AsyncOpenDataClient:
         cache_dir: PathLike | None = None,
         file_pattern: str | None = None,
         max_files: int | None = None,
+        engine: str = "h5netcdf",
+        combine: CombineMethod = "by_coords",
+        concat_dim: str | None = None,
         **open_dataset_kwargs: Any,
     ) -> xr.Dataset:
         """Download matching archive files via Open Data and assemble an xarray.Dataset.
@@ -367,6 +381,12 @@ class AsyncOpenDataClient:
             Optional regular expression to keep only matching file names.
         max_files : int | None, default=None
             Maximum number of files to download (after listing, ascending order).
+        engine : str, default="h5netcdf"
+            Xarray backend engine used to open each file (see `files_to_dataset`).
+        combine : CombineMethod, default="by_coords"
+            How to combine the per-file datasets (see `files_to_dataset`).
+        concat_dim : str | None, default=None
+            Dimension to concatenate along when combine='nested'.
         **open_dataset_kwargs : Any
             Additional keyword arguments passed to `xarray.open_dataset` per file.
 
@@ -386,9 +406,8 @@ class AsyncOpenDataClient:
             start_time=start_time,
             end_time=end_time,
             file_pattern=file_pattern,
+            max_files=max_files,
         )
-        if max_files is not None:
-            files = files[:max_files]
         logger.info(
             "open_dataset: dataset '%s' v%s -> %d files (cache_dir=%s)",
             dataset_name,
@@ -402,6 +421,11 @@ class AsyncOpenDataClient:
                 f"between {start_time} and {end_time}."
             )
 
+        combine_kwargs = {
+            "engine": engine,
+            "combine": combine,
+            "concat_dim": concat_dim,
+        }
         if cache_dir is None:
             with tempfile.TemporaryDirectory(prefix="knmi_") as tmp:
                 paths = await self.download_files(
@@ -410,7 +434,9 @@ class AsyncOpenDataClient:
                     filenames=files,
                     destination_dir=tmp,
                 )
-                dataset = files_to_dataset(paths, **open_dataset_kwargs)
+                dataset = files_to_dataset(
+                    paths, **combine_kwargs, **open_dataset_kwargs
+                )
                 dataset.load()
                 dataset.close()
                 return dataset
@@ -421,4 +447,4 @@ class AsyncOpenDataClient:
             filenames=files,
             destination_dir=cache_dir,
         )
-        return files_to_dataset(paths, **open_dataset_kwargs)
+        return files_to_dataset(paths, **combine_kwargs, **open_dataset_kwargs)

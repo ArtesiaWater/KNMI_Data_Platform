@@ -122,6 +122,59 @@ async def test_stream_maps_errors(transport):
         assert exc_info.value.status_code == 404
 
 
+async def test_error_messages_strip_presigned_query_string(transport):
+    # the query string of a presigned URL is a credential: it must never end
+    # up in an exception message or the stored url attribute
+    url = "https://fake-s3.amazonaws.com/f.nc?X-Amz-Signature=topsecret&X-Amz-Credential=abc"
+    with respx.mock(assert_all_called=False) as router:
+        router.get(url).mock(return_value=httpx.Response(404, text="nope"))
+        with pytest.raises(KNMIHTTPError) as exc_info:
+            await transport.request("GET", url)
+        assert exc_info.value.status_code == 404
+        assert "topsecret" not in str(exc_info.value)
+        assert exc_info.value.url == "https://fake-s3.amazonaws.com/f.nc"
+    with respx.mock(assert_all_called=False) as router:
+        router.get(url).mock(return_value=httpx.Response(403, text="forbidden"))
+        with pytest.raises(KNMIAuthError) as exc_info:
+            await transport.request("GET", url)
+        assert "topsecret" not in str(exc_info.value)
+
+
+async def test_stream_error_strips_presigned_signature(transport):
+    url = "https://fake-s3.amazonaws.com/f.nc?X-Amz-Signature=topsecret"
+    with respx.mock(assert_all_called=False) as router:
+        router.get(url).mock(return_value=httpx.Response(403, text="denied"))
+        with pytest.raises(KNMIAuthError) as exc_info:
+            async with transport.stream("GET", url):
+                pass
+    assert "topsecret" not in str(exc_info.value)
+
+
+def test_knmidata_logger_nullhandler_and_debug_level():
+    # library pattern: only a NullHandler, but our own (sanitized) log lines
+    # default to DEBUG so basicConfig(level=DEBUG) is enough to see them
+    import logging
+
+    import knmidata  # noqa: F401
+
+    logger = logging.getLogger("knmidata")
+    assert logger.level == logging.DEBUG
+    assert any(isinstance(h, logging.NullHandler) for h in logger.handlers)
+
+
+def test_httpx_logger_left_untouched():
+    # knmidata must not configure third-party loggers; users decide themselves
+    # (httpx logs full URLs at INFO, so see the README caution about DEBUG)
+    import logging
+
+    import knmidata  # noqa: F401
+
+    httpx_logger = logging.getLogger("httpx")
+    assert httpx_logger.level == logging.NOTSET
+    assert not httpx_logger.filters
+    assert not httpx_logger.handlers
+
+
 async def test_semaphore_bounds_concurrency(transport):
     transport.semaphore = asyncio.Semaphore(2)
     active = 0

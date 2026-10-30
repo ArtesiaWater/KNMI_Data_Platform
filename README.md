@@ -123,24 +123,6 @@ with knmidata.KNMIClient() as client:
     )
 ```
 
-## Examples
-
-See [docs/example_daily_in_situ_observations.py](docs/example_daily_in_situ_observations.py) — a notebook-style (`# %%` cells) walkthrough that fetches the [daily-in-situ-meteorological-observations](https://dataplatform.knmi.nl/dataset/access/daily-in-situ-meteorological-observations-1-0) dataset via both the Open Data API and the EDR API (including a plot of the RH/TG/EV24 time series at De Bilt), explaining how KNMI data is organized and when to use which API:
-
-```bash
-python docs/example_daily_in_situ_observations.py   # as a script
-jupytext --to notebook docs/example_daily_in_situ_observations.py  # as a notebook
-```
-
-## Logging
-
-`knmidata` logs through the standard `logging` module (logger name `knmidata.*`): `DEBUG` for every outgoing request (method, URL, query params) and response status, `INFO` for high-level operations (file listing, downloads, EDR queries, dataset assembly), `WARNING` for retries and fallbacks (e.g. anonymous key), `ERROR` before raising. Credentials are never logged: request headers are excluded, and presigned S3 URLs are logged as host+path only; the `httpx` logger is capped at WARNING so its request lines can't leak presigned signatures either. Enable with:
-
-```python
-import logging
-
-logging.basicConfig(level=logging.DEBUG)  # or INFO
-```
 
 ## Development
 

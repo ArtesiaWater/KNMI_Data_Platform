@@ -31,21 +31,37 @@ def _format_interval(
     """Build the EDR `datetime` query parameter (RFC 3339) from start/end times.
 
     Both given -> 'start/end'; only `start_time` -> 'start/..'; only `end_time`
-    -> '../end'; neither -> None. A string containing '/' or '..' is passed
-    through unchanged as an interval literal. Naive values are assumed UTC.
+    -> '../end'; neither -> None. If exactly one bound is given and is a string
+    containing '/' or '..', it is passed through unchanged as an interval
+    literal. Naive values are assumed UTC.
     """
     if start_time is None and end_time is None:
         return None
-    for value in (start_time, end_time):
-        if (
-            isinstance(value, str)
-            and ("/" in value or ".." in value)
-            and (start_time is None or end_time is None)
-        ):
-            return value
+    if start_time is None or end_time is None:
+        single = start_time if start_time is not None else end_time
+        if isinstance(single, str) and ("/" in single or ".." in single):
+            return single
     start = to_iso8601(start_time) if start_time is not None else ".."
     end = to_iso8601(end_time) if end_time is not None else ".."
     return f"{start}/{end}"
+
+
+def _build_query_params(
+    start_time: TimeLike | None = None,
+    end_time: TimeLike | None = None,
+    parameters: list[str] | None = None,
+    output_format: OutputFormat = "CoverageJSON",
+    crs: str | None = None,
+) -> QueryParams:
+    """Assemble the shared EDR data-query parameters (datetime, parameter-name, f, crs)."""
+    params: QueryParams = {"f": output_format}
+    if dt := _format_interval(start_time, end_time):
+        params["datetime"] = dt
+    if parameters:
+        params["parameter-name"] = ",".join(parameters)
+    if crs:
+        params["crs"] = crs
+    return params
 
 
 @dataclass(slots=True, kw_only=True)
@@ -264,11 +280,7 @@ class AsyncEDRClient:
                 "(the GeoJSON feature 'id', e.g. '06260' for De Bilt)."
             )
         endpoint = f"{EDR_BASE_URL}/collections/{collection_id}/locations/{location_id}"
-        params: QueryParams = {}
-        if dt := _format_interval(start_time, end_time):
-            params["datetime"] = dt
-        if parameters:
-            params["parameter-name"] = ",".join(parameters)
+        params = _build_query_params(start_time, end_time, parameters, output_format)
         return await self._query(endpoint, params, output_format)
 
     async def _query(
@@ -278,11 +290,10 @@ class AsyncEDRClient:
         output_format: OutputFormat,
     ) -> xr.Dataset:
         """Dispatch a data query to an EDR endpoint and route the response to a parser."""
-        query_params = {**params, "f": output_format}
         logger.info("EDR query: GET %s", endpoint)
-        logger.debug("EDR query params: %s", query_params)
+        logger.debug("EDR query params: %s", params)
         response = await self.transport.request(
-            "GET", endpoint, params=query_params, auth=self.auth
+            "GET", endpoint, params=params, auth=self.auth
         )
         payload = response.json()
         if output_format == "GeoJSON":
@@ -335,13 +346,10 @@ class AsyncEDRClient:
             In-memory xarray dataset.
         """
         endpoint = f"{EDR_BASE_URL}/collections/{collection}/position"
-        params: QueryParams = {"coords": f"POINT({coords[0]} {coords[1]})"}
-        if dt := _format_interval(start_time, end_time):
-            params["datetime"] = dt
-        if parameters:
-            params["parameter-name"] = ",".join(parameters)
-        if crs:
-            params["crs"] = crs
+        params: QueryParams = {
+            "coords": f"POINT({coords[0]} {coords[1]})",
+            **_build_query_params(start_time, end_time, parameters, output_format, crs),
+        }
         return await self._query(endpoint, params, output_format)
 
     async def area(
@@ -384,13 +392,10 @@ class AsyncEDRClient:
             f"POLYGON(({minx} {miny}, {maxx} {miny}, "
             f"{maxx} {maxy}, {minx} {maxy}, {minx} {miny}))"
         )
-        params: QueryParams = {"coords": wkt_poly}
-        if dt := _format_interval(start_time, end_time):
-            params["datetime"] = dt
-        if parameters:
-            params["parameter-name"] = ",".join(parameters)
-        if crs:
-            params["crs"] = crs
+        params: QueryParams = {
+            "coords": wkt_poly,
+            **_build_query_params(start_time, end_time, parameters, output_format, crs),
+        }
         return await self._query(endpoint, params, output_format)
 
     async def cube(
@@ -436,11 +441,6 @@ class AsyncEDRClient:
         params: QueryParams = {
             "bbox": f"{minx},{miny},{maxx},{maxy}",
             "z": z_str,
+            **_build_query_params(start_time, end_time, parameters, output_format, crs),
         }
-        if dt := _format_interval(start_time, end_time):
-            params["datetime"] = dt
-        if parameters:
-            params["parameter-name"] = ",".join(parameters)
-        if crs:
-            params["crs"] = crs
         return await self._query(endpoint, params, output_format)

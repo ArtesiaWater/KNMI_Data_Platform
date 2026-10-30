@@ -81,13 +81,6 @@ def parse_coverage(
         array_data = _to_float_array(raw_values)
         expected = int(np.prod(shape)) if shape else 1
         if array_data.size != expected:
-            logger.warning(
-                "Range '%s' has %d values, expected %d for axes %s — skipping",
-                param_id,
-                array_data.size,
-                expected,
-                dims,
-            )
             raise KNMIError(
                 f"Range '{param_id}' has {array_data.size} values, expected {expected} "
                 f"for domain axes {dims}."

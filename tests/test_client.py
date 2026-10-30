@@ -5,7 +5,7 @@ import pytest
 import respx
 
 import knmidata
-from knmidata._exceptions import NoFilesFoundError
+from knmidata._exceptions import KNMIError, NoFilesFoundError
 from knmidata.config import EDR_BASE_URL as EDR
 from knmidata.config import OPENDATA_BASE_URL as OPENDATA
 
@@ -202,6 +202,32 @@ def test_module_level_open_dataset(netcdf_bytes):
         _mock_open_data(router, ["f1.nc"], netcdf_bytes)
         ds = knmidata.open_dataset("ds", "1.0", api_key="key")
     assert ds["temp"].values.tolist() == [1.0]
+
+
+async def test_open_dataset_forwards_combine_kwargs(netcdf_bytes, tmp_path):
+    # both files carry the same time coordinate; combine="nested" concatenates
+    # along concat_dim, which only works if the kwargs reach files_to_dataset
+    with respx.mock(assert_all_called=False) as router:
+        _mock_open_data(router, ["f1.nc", "f2.nc"], netcdf_bytes)
+        async with knmidata.AsyncKNMIClient(api_key="key") as client:
+            ds = await client.open_dataset(
+                "ds", "1.0", cache_dir=tmp_path, combine="nested", concat_dim="time"
+            )
+    assert ds.sizes["time"] == 2
+
+
+def test_sync_client_use_after_close_raises():
+    with knmidata.KNMIClient(api_key="key") as client:
+        pass
+    with pytest.raises(KNMIError, match="closed"):
+        client.open_dataset("ds", "1.0")
+    client.close()  # idempotent
+
+
+def test_sync_facades_are_cached():
+    with knmidata.KNMIClient(api_key="key", edr_key="edr-key") as client:
+        assert client.opendata is client.opendata
+        assert client.edr is client.edr
 
 
 def test_version_and_exports():
