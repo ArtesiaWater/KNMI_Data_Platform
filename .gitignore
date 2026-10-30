@@ -94,5 +94,5 @@ tempCodeRunnerFile.py
 .ruff_cache/
 
 # Own files
-docs/.env.example
 *.nc
+*.env
