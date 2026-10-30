@@ -159,6 +159,33 @@ def test_sync_catalog_and_downloader_facades(netcdf_bytes, tmp_path):
             assert client.opendata.downloader is not None
 
 
+def test_sync_facade_completion_and_docstrings():
+    """The sync facade must expose real attributes (tab-completion) and the
+    original docstrings/signatures (help())."""
+    import inspect
+
+    import knmidata.edr.client as edr_mod
+    from knmidata.client import _SyncFacade
+
+    with knmidata.KNMIClient(api_key="key", edr_key="edr-key") as client:
+        facade = client.edr
+        # tab-completion: wrapped methods show up in dir()
+        assert "position" in dir(facade)
+        assert "location_data" in dir(facade)
+        # docstring and signature are the async method's own
+        assert facade.position.__doc__ == edr_mod.AsyncEDRClient.position.__doc__
+        # signature matches the bound async method (i.e. without 'self')
+        facade_sig = inspect.signature(facade.position)
+        async_sig = inspect.signature(edr_mod.AsyncEDRClient.position)
+        assert list(facade_sig.parameters) == list(async_sig.parameters)[1:]
+        assert facade_sig.return_annotation == async_sig.return_annotation
+        assert facade.position.__wrapped__ is not None
+        # nested sub-clients are wrapped recursively
+        assert isinstance(client.opendata.catalog, _SyncFacade)
+        assert "list_files" in dir(client.opendata.catalog)
+        assert client.opendata.catalog.list_files.__doc__
+
+
 def test_sync_edr_facade(netcdf_bytes):
     from conftest import coveragejson_payload
 

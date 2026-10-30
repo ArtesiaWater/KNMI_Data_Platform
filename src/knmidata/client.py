@@ -12,10 +12,11 @@ The clients expose one namespace per KNMI API, symmetric for async and sync use:
 """
 
 import asyncio
+import functools
 import inspect
 import threading
 from collections.abc import Coroutine
-from typing import Any, Self
+from typing import Any, ClassVar, Self
 
 import xarray as xr
 
@@ -23,7 +24,9 @@ from knmidata._auth import resolve_edr_auth, resolve_open_data_auth
 from knmidata._http import AsyncTransport
 from knmidata._typing import PathLike, RunCoroutine, T, TimeLike
 from knmidata.edr.client import AsyncEDRClient
+from knmidata.opendata.catalog import AsyncCatalogClient
 from knmidata.opendata.client import AsyncOpenDataClient
+from knmidata.opendata.download import AsyncFileDownloader
 
 
 class AsyncKNMIClient:
@@ -132,6 +135,11 @@ class AsyncKNMIClient:
 class _SyncFacade:
     """Expose the coroutine methods of an async client as blocking sync calls.
 
+    Coroutine methods are bound as real attributes at construction time (with
+    `functools.wraps`, so `__doc__`/`__name__`/`__wrapped__` and the signature are
+    preserved), which makes tab-completion (`dir()`) and `help()` work. Nested
+    sub-clients (e.g. `client.opendata.catalog`) are wrapped recursively.
+
     Parameters
     ----------
     run : RunCoroutine[T]
@@ -140,19 +148,53 @@ class _SyncFacade:
         The async client to wrap.
     """
 
+    _FACADE_TARGETS: ClassVar[tuple[type, ...]] = (
+        AsyncCatalogClient,
+        AsyncFileDownloader,
+        AsyncEDRClient,
+        AsyncOpenDataClient,
+    )
+    """Async client classes that get wrapped recursively as nested facades."""
+
     def __init__(self, run: RunCoroutine[T], target: Any) -> None:
         self._run = run
         self._target = target
+        for name in dir(target):
+            if name.startswith("_"):
+                continue
+            attr = getattr(target, name)
+            if inspect.iscoroutinefunction(attr):
+                setattr(self, name, self._wrap(attr))
+            elif isinstance(attr, self._FACADE_TARGETS):
+                setattr(self, name, _SyncFacade(run, attr))
+
+    def _wrap(self, func: Any) -> Any:
+        """Wrap a coroutine function in a blocking call, preserving its metadata."""
+
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return self._run(func(*args, **kwargs))
+
+        return wrapper
 
     def __getattr__(self, name: str) -> Any:
+        # Fallback for attributes not bound in __init__ (e.g. added later).
         attr = getattr(self._target, name)
         if inspect.iscoroutinefunction(attr):
-
-            def wrapper(*args: Any, **kwargs: Any) -> Any:
-                return self._run(attr(*args, **kwargs))
-
+            wrapper = self._wrap(attr)
+            setattr(self, name, wrapper)
             return wrapper
+        if isinstance(attr, self._FACADE_TARGETS):
+            facade = _SyncFacade(self._run, attr)
+            setattr(self, name, facade)
+            return facade
         return attr
+
+    def __dir__(self) -> list[str]:
+        """Include the wrapped target's public attributes for tab-completion."""
+        own = {n for n in super().__dir__() if not n.startswith("_")}
+        target_names = {n for n in dir(self._target) if not n.startswith("_")}
+        return sorted(own | target_names)
 
 
 class KNMIClient:
