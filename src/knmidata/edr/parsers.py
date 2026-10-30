@@ -1,5 +1,6 @@
 """Parsers converting OGC EDR payload responses into in-memory xarray.Dataset instances."""
 
+from logging import getLogger
 from typing import Any
 
 import numpy as np
@@ -7,6 +8,8 @@ import pandas as pd
 import xarray as xr
 
 from knmidata._exceptions import KNMIError
+
+logger = getLogger(__name__)
 
 _AXIS_NAMES = {"t": "time", "composite": "station"}
 
@@ -78,6 +81,13 @@ def parse_coverage(
         array_data = _to_float_array(raw_values)
         expected = int(np.prod(shape)) if shape else 1
         if array_data.size != expected:
+            logger.warning(
+                "Range '%s' has %d values, expected %d for axes %s — skipping",
+                param_id,
+                array_data.size,
+                expected,
+                dims,
+            )
             raise KNMIError(
                 f"Range '{param_id}' has {array_data.size} values, expected {expected} "
                 f"for domain axes {dims}."
@@ -197,6 +207,11 @@ def parse_coveragejson(payload: dict[str, Any]) -> xr.Dataset:
             out = xr.concat(squeezed, dim=dim)
             if any(v is not None for v in lons):
                 out = out.assign_coords(lon=("station", lons), lat=("station", lats))
+            logger.debug(
+                "Merged %d coverages along 'station' (labels: %s)",
+                len(coverages),
+                labels[:5],
+            )
             return out
         return xr.concat(
             coverages,
@@ -280,4 +295,7 @@ def parse_geojson(payload: dict[str, Any]) -> xr.Dataset:
         dataset.attrs["geometry_type"] = geom_types[0]
     if payload.get("bbox"):
         dataset.attrs["bbox"] = payload["bbox"]
+    logger.debug(
+        "Parsed GeoJSON: %d features, %d data variables", len(rows), len(data_vars)
+    )
     return dataset

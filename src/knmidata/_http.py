@@ -135,6 +135,9 @@ class AsyncTransport:
         KNMIHTTPError
             On other HTTP error statuses after exhausting retries.
         """
+        # NOTE: never log request headers (they carry the API key) or presigned
+        # URL query strings (they carry the S3 signature); log URL + params only.
+        logger.debug("HTTP %s %s params=%s", method, url, kwargs.get("params"))
         for attempt in range(self.max_retries + 1):
             try:
                 async with self.semaphore:
@@ -143,27 +146,45 @@ class AsyncTransport:
                     )
             except httpx.TransportError as exc:
                 if attempt >= self.max_retries:
+                    logger.error(
+                        "HTTP %s %s failed after %d attempts: %s",
+                        method,
+                        url,
+                        attempt + 1,
+                        exc,
+                    )
                     raise KNMIHTTPError(0, url, f"Transport error: {exc}") from exc
-                logger.debug(
-                    "Transport error on %s %s (attempt %d): %s",
+                logger.warning(
+                    "Transport error on %s %s (attempt %d/%d): %s — retrying",
                     method,
                     url,
                     attempt + 1,
+                    self.max_retries + 1,
                     exc,
                 )
                 await asyncio.sleep(await self._backoff_delay(attempt, None))
                 continue
 
+            logger.debug("HTTP %s %s -> %d", method, url, response.status_code)
             retryable = response.status_code in RETRYABLE_STATUS_CODES
             if not retryable or attempt >= self.max_retries:
+                if response.status_code >= 400:
+                    logger.error(
+                        "HTTP %s %s -> %d: %s",
+                        method,
+                        url,
+                        response.status_code,
+                        self._response_text(response)[:200],
+                    )
                 self._raise_for_status(response)
                 return response
-            logger.debug(
-                "Retryable HTTP %d on %s %s (attempt %d)",
+            logger.warning(
+                "Retryable HTTP %d on %s %s (attempt %d/%d) — retrying",
                 response.status_code,
                 method,
                 url,
                 attempt + 1,
+                self.max_retries + 1,
             )
             await asyncio.sleep(await self._backoff_delay(attempt, response))
 
@@ -217,11 +238,26 @@ class AsyncTransport:
         httpx.Response
             The open response stream.
         """
+        # log host+path only: the query string of a presigned URL is a credential
+        logger.debug("HTTP %s %s (stream)", method, url.split("?")[0])
         stream_ctx = self.client.stream(method, url, auth=auth, **kwargs)
         async with self.semaphore, stream_ctx as response:
+            logger.debug(
+                "HTTP %s %s -> %d (stream)",
+                method,
+                url.split("?")[0],
+                response.status_code,
+            )
             if response.status_code >= 400:
                 # error bodies are small; read them so they can be included
                 await response.aread()
+                logger.error(
+                    "HTTP %s %s -> %d: %s",
+                    method,
+                    url.split("?")[0],
+                    response.status_code,
+                    self._response_text(response)[:200],
+                )
             self._raise_for_status(response)
             yield response
 

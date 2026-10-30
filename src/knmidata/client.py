@@ -16,6 +16,7 @@ import functools
 import inspect
 import threading
 from collections.abc import Coroutine
+from logging import getLogger
 from typing import Any, ClassVar, Self
 
 import xarray as xr
@@ -30,6 +31,8 @@ from knmidata._typing import (
 )
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.opendata.client import AsyncOpenDataClient
+
+logger = getLogger(__name__)
 
 
 class AsyncKNMIClient:
@@ -254,6 +257,7 @@ class KNMIClient:
             target=self._loop.run_forever, name="knmidata-event-loop", daemon=True
         )
         self._thread.start()
+        logger.debug("KNMIClient: background event loop started")
         self._closed = False
         self._async_client = AsyncKNMIClient(
             api_key=api_key,
@@ -318,6 +322,7 @@ class KNMIClient:
         self._run(self._async_client.aclose())
         self._loop.call_soon_threadsafe(self._loop.stop)
         self._thread.join(timeout=10.0)
+        logger.debug("KNMIClient: closed (transport closed, background loop stopped)")
 
     def __enter__(self) -> Self:
         """Context manager entry."""

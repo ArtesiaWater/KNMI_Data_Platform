@@ -1,6 +1,7 @@
 """Asynchronous Python client for the KNMI Data Platform with native xarray support."""
 
 import logging
+import re
 
 from knmidata._auth import APIKeyAuth, NoAuth, resolve_edr_auth, resolve_open_data_auth
 from knmidata._exceptions import (

@@ -2,6 +2,7 @@
 
 import math
 from dataclasses import dataclass
+from logging import getLogger
 from typing import Any
 
 import httpx
@@ -20,6 +21,8 @@ from knmidata._typing import (
 )
 from knmidata.config import EDR_BASE_URL
 from knmidata.edr.parsers import parse_coveragejson, parse_geojson
+
+logger = getLogger(__name__)
 
 
 def _format_interval(
@@ -205,7 +208,17 @@ class AsyncEDRClient:
                     "properties": props,
                 }
         if best is None:
+            logger.error("Collection '%s' has no locations", collection_id)
             raise KNMIError(f"Collection '{collection_id}' has no locations.")
+        logger.info(
+            "Nearest location to (%.4f, %.4f) in '%s': %s (%s) at %.2f km",
+            lon,
+            lat,
+            collection_id,
+            best["id"],
+            best["name"],
+            best["distance_km"],
+        )
         return best
 
     async def location_data(
@@ -266,6 +279,8 @@ class AsyncEDRClient:
     ) -> xr.Dataset:
         """Dispatch a data query to an EDR endpoint and route the response to a parser."""
         query_params = {**params, "f": output_format}
+        logger.info("EDR query: GET %s", endpoint)
+        logger.debug("EDR query params: %s", query_params)
         response = await self.transport.request(
             "GET", endpoint, params=query_params, auth=self.auth
         )

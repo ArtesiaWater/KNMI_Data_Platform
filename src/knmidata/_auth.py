@@ -44,6 +44,11 @@ def get_anonymous_opendata_api_key() -> str:
         )
         response.raise_for_status()
     except httpx.HTTPError as exc:
+        logger.error(
+            "Could not fetch the anonymous API key from %s: %s",
+            ANONYMOUS_KEY_DOCS_URL,
+            exc,
+        )
         raise KNMIAuthError(
             f"Could not retrieve the anonymous API key from {ANONYMOUS_KEY_DOCS_URL} "
             f"({exc}). Pass `api_key=...` or set the KNMI_OPENDATA_API_KEY "
@@ -53,6 +58,7 @@ def get_anonymous_opendata_api_key() -> str:
 
     match = _TOKEN_PATTERN.search(response.text)
     if match is None:
+        logger.error("No anonymous API key found on %s", ANONYMOUS_KEY_DOCS_URL)
         raise KNMIAuthError(
             f"Could not find an anonymous API key on {ANONYMOUS_KEY_DOCS_URL}. "
             "Pass `api_key=...` or set the KNMI_OPENDATA_API_KEY "
@@ -131,13 +137,18 @@ def _read_key_file(env_var: str) -> str | None:
     path = os.getenv(env_var)
     if not path:
         return None
+    logger.debug("Reading API key from file %s (from $%s)", path, env_var)
     try:
         key = Path(path).read_text(encoding="utf-8").strip()
     except OSError as exc:
+        logger.error(
+            "Could not read API key file %s (from $%s): %s", path, env_var, exc
+        )
         raise KNMIAuthError(
             f"Could not read API key file {path!r} (from ${env_var}): {exc}"
         ) from exc
     if not key:
+        logger.error("API key file %s (from $%s) is empty", path, env_var)
         raise KNMIAuthError(f"API key file {path!r} (from ${env_var}) is empty.")
     return key
 
@@ -168,11 +179,22 @@ def resolve_open_data_auth(api_key: str | None = None) -> httpx.Auth:
         api_key
         or os.getenv("KNMI_OPENDATA_API_KEY")
         or _read_key_file("KNMI_OPENDATA_API_KEY_FILE")
-        or get_anonymous_opendata_api_key()
     )
-    if not resolved:
-        raise KNMIAuthError("Failed to resolve an Open Data API key.")
-    return APIKeyAuth(api_key=resolved)
+    if resolved:
+        if api_key:
+            source = "api_key argument"
+        elif os.getenv("KNMI_OPENDATA_API_KEY"):
+            source = "$KNMI_OPENDATA_API_KEY"
+        else:
+            source = "$KNMI_OPENDATA_API_KEY_FILE"
+        logger.debug("Open Data API key resolved from %s", source)
+        return APIKeyAuth(api_key=resolved)
+    logger.warning(
+        "No Open Data API key found (api_key / $KNMI_OPENDATA_API_KEY / "
+        "$KNMI_OPENDATA_API_KEY_FILE); falling back to the shared anonymous "
+        "key, which is rate-limited."
+    )
+    return APIKeyAuth(api_key=get_anonymous_opendata_api_key())
 
 
 def resolve_edr_auth(api_key: str | None = None) -> httpx.Auth:
@@ -206,11 +228,22 @@ def resolve_edr_auth(api_key: str | None = None) -> httpx.Auth:
         or os.getenv("KNMI_EDR_API_KEY")
         or _read_key_file("KNMI_EDR_API_KEY_FILE")
     )
-    if not resolved:
-        raise KNMIAuthError(
-            "The KNMI EDR API requires a personal registered EDR API key. "
-            "Pass `edr_key=...` or set the KNMI_EDR_API_KEY environment variable "
-            "(or KNMI_EDR_API_KEY_FILE pointing to a file with the key). "
-            "Request a key at https://developer.dataplatform.knmi.nl/."
-        )
+    if resolved:
+        if api_key:
+            source = "edr_key argument"
+        elif os.getenv("KNMI_EDR_API_KEY"):
+            source = "$KNMI_EDR_API_KEY"
+        else:
+            source = "$KNMI_EDR_API_KEY_FILE"
+        logger.debug("EDR API key resolved from %s", source)
+        return APIKeyAuth(api_key=resolved)
+    logger.error(
+        "No EDR API key found (edr_key / $KNMI_EDR_API_KEY / $KNMI_EDR_API_KEY_FILE)."
+    )
+    raise KNMIAuthError(
+        "The KNMI EDR API requires a personal registered EDR API key. "
+        "Pass `edr_key=...` or set the KNMI_EDR_API_KEY environment variable "
+        "(or KNMI_EDR_API_KEY_FILE pointing to a file with the key). "
+        "Request a key at https://developer.dataplatform.knmi.nl/."
+    )
     return APIKeyAuth(api_key=resolved)

@@ -132,6 +132,16 @@ python docs/example_daily_in_situ_observations.py   # as a script
 jupytext --to notebook docs/example_daily_in_situ_observations.py  # as a notebook
 ```
 
+## Logging
+
+`knmidata` logs through the standard `logging` module (logger name `knmidata.*`): `DEBUG` for every outgoing request (method, URL, query params) and response status, `INFO` for high-level operations (file listing, downloads, EDR queries, dataset assembly), `WARNING` for retries and fallbacks (e.g. anonymous key), `ERROR` before raising. Credentials are never logged: request headers are excluded, and presigned S3 URLs are logged as host+path only; the `httpx` logger is capped at WARNING so its request lines can't leak presigned signatures either. Enable with:
+
+```python
+import logging
+
+logging.basicConfig(level=logging.DEBUG)  # or INFO
+```
+
 ## Development
 
 ```bash

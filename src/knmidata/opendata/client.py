@@ -5,6 +5,7 @@ import os
 import re
 import tempfile
 from dataclasses import dataclass
+from logging import getLogger
 from pathlib import Path
 from typing import Any
 
@@ -18,6 +19,8 @@ from knmidata._time import to_iso8601
 from knmidata._typing import PathLike, QueryParams, TimeLike
 from knmidata.config import OPENDATA_BASE_URL
 from knmidata.opendata.parsers import files_to_dataset
+
+logger = getLogger(__name__)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -113,6 +116,14 @@ class AsyncOpenDataClient:
         next_page_token: str | None = None
         seen_tokens: set[str] = set()
 
+        logger.info(
+            "Listing files of dataset '%s' v%s, %s to %s (order_by=%s)",
+            dataset_name,
+            dataset_version,
+            begin or "..",
+            end or "..",
+            order_by or "filename",
+        )
         while True:
             params: QueryParams = {"maxKeys": max_keys}
             if next_page_token:
@@ -128,6 +139,12 @@ class AsyncOpenDataClient:
 
             payload = await self.transport.get_json(
                 endpoint, auth=self.auth, params=params
+            )
+            logger.debug(
+                "Catalog page: %d files (isTruncated=%s, nextPageToken=%s)",
+                len(payload.get("files", [])),
+                payload.get("isTruncated"),
+                bool(payload.get("nextPageToken")),
             )
 
             for item in payload.get("files", []):
@@ -145,7 +162,14 @@ class AsyncOpenDataClient:
                 )
             seen_tokens.add(next_page_token)
 
-        return list(dict.fromkeys(filenames))
+        result = list(dict.fromkeys(filenames))
+        logger.info(
+            "Found %d unique files for dataset '%s' v%s",
+            len(result),
+            dataset_name,
+            dataset_version,
+        )
+        return result
 
     async def _get_file_payload(
         self, dataset_name: str, dataset_version: str, filename: str
@@ -206,8 +230,12 @@ class AsyncOpenDataClient:
         if target_path.exists():
             existing = target_path.stat().st_size
             if existing > 0 and (expected_size is None or existing == expected_size):
+                logger.debug(
+                    "Skipping existing file %s (%d bytes)", target_path, existing
+                )
                 return target_path
 
+        logger.debug("Downloading %s -> %s", url.split("?")[0], target_path)
         part_path = target_path.with_name(target_path.name + ".part")
         async with self.transport.stream("GET", url) as stream:
             with part_path.open("wb") as f:
@@ -216,12 +244,19 @@ class AsyncOpenDataClient:
 
         downloaded = part_path.stat().st_size
         if expected_size is not None and downloaded != expected_size:
+            logger.warning(
+                "Size mismatch for %s: downloaded %d bytes, expected %d — discarding partial file",
+                target_path.name,
+                downloaded,
+                expected_size,
+            )
             part_path.unlink(missing_ok=True)
             raise KNMIError(
                 f"Downloaded size {downloaded} does not match expected size "
                 f"{expected_size} for {target_path.name}."
             )
         os.replace(part_path, target_path)
+        logger.debug("Downloaded %s (%d bytes)", target_path.name, downloaded)
         return target_path
 
     async def download_files(
@@ -260,6 +295,13 @@ class AsyncOpenDataClient:
             else Path(tempfile.mkdtemp(prefix="knmi_"))
         )
         dest.mkdir(parents=True, exist_ok=True)
+        logger.info(
+            "Downloading %d files of dataset '%s' v%s to %s",
+            len(filenames),
+            dataset_name,
+            dataset_version,
+            dest,
+        )
 
         async def _fetch_and_stream(fname: str) -> Path:
             payload = await self._get_file_payload(dataset_name, dataset_version, fname)
@@ -279,9 +321,18 @@ class AsyncOpenDataClient:
         ]
         if errors:
             details = "; ".join(f"{fname}: {err}" for fname, err in errors)
+            logger.error(
+                "Failed to download %d of %d files of dataset '%s' v%s: %s",
+                len(errors),
+                len(filenames),
+                dataset_name,
+                dataset_version,
+                details,
+            )
             raise KNMIError(
                 f"Failed to download {len(errors)} of {len(filenames)} files. {details}"
             )
+        logger.info("Downloaded %d files to %s", len(filenames), dest)
         return [result for result in results if isinstance(result, Path)]
 
     async def open_dataset(
@@ -338,6 +389,13 @@ class AsyncOpenDataClient:
         )
         if max_files is not None:
             files = files[:max_files]
+        logger.info(
+            "open_dataset: dataset '%s' v%s -> %d files (cache_dir=%s)",
+            dataset_name,
+            dataset_version,
+            len(files),
+            cache_dir or "<temporary, loaded into memory>",
+        )
         if not files:
             raise NoFilesFoundError(
                 f"No files found for dataset '{dataset_name}' (v{dataset_version}) "
