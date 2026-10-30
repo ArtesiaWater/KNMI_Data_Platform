@@ -11,10 +11,9 @@ import httpx
 
 from knmidata._exceptions import KNMIAuthError, KNMIHTTPError, api_error_message
 from knmidata._version import __version__
+from knmidata.config import RETRYABLE_STATUS_CODES
 
 logger = getLogger(__name__)
-
-RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
 class AsyncTransport:
