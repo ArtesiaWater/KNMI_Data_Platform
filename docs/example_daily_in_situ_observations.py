@@ -13,7 +13,7 @@
 #
 # 1. **Open Data API** — download whole files (NetCDF) and open them as one
 #    `xarray.Dataset`.
-# 2. **EDR API** — run spatio-temporal *queries* (position / area), parse the
+# 2. **EDR API** — run spatio-temporal *queries* (location / area), parse the
 #    response into an `xarray.Dataset`, and plot the time series of
 #    precipitation (RH), temperature (TG) and evaporation (EV24) at De Bilt.
 #
@@ -235,7 +235,6 @@ if client_ok:
             DATASET_VERSION,
             start_time=START,
             end_time=END,
-            max_files=2,  # remove this to download the whole period
             cache_dir=CACHE_DIR,
         )
     except knmidata.KNMIHTTPError as exc:
@@ -259,10 +258,13 @@ if ds is not None:
 #   parameters (variables, under the `parameter-names` key), which output
 #   formats, the spatial/temporal extent.
 # - `GET /collections/{id}/locations` — the measurement locations (GeoJSON).
-# - Data queries: `/position` (point, WKT `POINT(lon lat)`), `/area` (polygon
-#   from a bbox), `/cube` (3D: bbox + `z`), with query parameters:
-#   - `datetime` — RFC 3339 instant or interval (`start/end`, open intervals
-#     with `..`); `knmidata` accepts `pd.Timestamp` or a `(start, end)` tuple;
+# - Data queries: `/locations/{location_id}` (data for one station),
+#   `/position` (point, WKT `POINT(lon lat)`), `/area` (polygon from a bbox),
+#   `/cube` (3D: bbox + `z`) — which ones work depends on the collection —
+#   with query parameters:
+#   - `datetime` — built from `start_time`/`end_time` (RFC 3339 interval
+#     `start/end`; open intervals use `..`); both accept `pd.Timestamp`,
+#     datetime, date, or ISO string;
 #   - `parameter-name` — comma-separated variables (see collection metadata);
 #   - `f` — output format: `CoverageJSON` (parsed to `xr.Dataset`) or
 #     `GeoJSON`.
@@ -306,36 +308,59 @@ if edr_available:
 # station, with its coordinates and metadata (station id, name, height).
 
 # %%
+locations = None
+de_bilt_id = "06260"  # fallback: WMO id of De Bilt
 if edr_available:
     locations = client.edr.locations(COLLECTION)
     features = locations.get("features", [])
     print(f"{len(features)} measurement locations; first 3:")
     for feat in features[:3]:
         props = feat.get("properties", {})
-        print(
-            f"  {props.get('id')}: {props.get('name')} at {feat['geometry']['coordinates']}"
-        )
+        name = props.get("name") or props.get("label")
+        print(f"  id={feat.get('id')}: {name} at {feat['geometry']['coordinates']}")
+
+    # Find De Bilt's station id by name. The id is the GeoJSON feature 'id'
+    # (older responses may carry it in properties instead).
+    for feat in features:
+        props = feat.get("properties", {})
+        name = str(props.get("name") or props.get("label") or "")
+        if "DE BILT" in name.upper():
+            sid = (
+                feat.get("id")
+                or props.get("id")
+                or props.get("eumetnet:locationId")
+                or props.get("wigosId")
+                or props.get("wmoId")
+            )
+            if sid:
+                de_bilt_id = str(sid)
+            print(f"De Bilt feature properties: {props}")
+    print(f"De Bilt station id: {de_bilt_id}")
 
 # %% [markdown]
-# ### Position query: daily time series at De Bilt
+# ### Location query: daily time series at De Bilt
 #
-# `coords=POINT(lon lat)` asks for the station nearest to that point.
-# `datetime=(START, END)` becomes an RFC 3339 interval. We ask for the three
+# For station collections, the way to get a time series for one station is
+# `/collections/{id}/locations/{location_id}` with `datetime` and
+# `parameter-name` query params. (Careful: `/position` with a `POINT(lon lat)`
+# coordinate can return HTTP 404 "The query returned no stations" on these
+# collections — use the location query instead.) We ask for the three
 # variables **RH** (precipitation sum), **TG** (mean temperature) and **EV24**
-# (Makkink evaporation). The CoverageJSON response has a `time` axis and a
-# `station` axis — parsed into a dataset where each parameter is a data
-# variable with units and a long name.
+# (Makkink evaporation); `start_time`/`end_time` become an RFC 3339 interval.
+# The CoverageJSON response is parsed into a dataset where each parameter is a
+# data variable with units and a long name.
 
 # %%
 ts = None
 if edr_available:
-    ts = client.edr.position(
+    ts = client.edr.location_data(
         COLLECTION,
-        coords=STATION_COORDS,
-        datetime=(START, END),
+        de_bilt_id,
+        start_time=START,
+        end_time=END,
         parameters=PARAMETERS,
     )
-    print("Daily time series at the station nearest to De Bilt:")
+    print(f"Daily time series at De Bilt (station {de_bilt_id}):")
     print(ts)
 
 # %% [markdown]
@@ -352,14 +377,20 @@ if ts is not None:
         len(PARAMETERS), 1, figsize=(9, 2.5 * len(PARAMETERS)), sharex=True
     )
     for ax, var in zip(axes, PARAMETERS, strict=True):
-        da = ts[var].isel(station=0) if "station" in ts[var].dims else ts[var]
+        # drop singleton dims (x, y, station, coverage) so a 1D time series remains
+        da = ts[var].squeeze(drop=True)
+        for d in list(da.dims):
+            if d != "time" and da.sizes[d] > 1:
+                da = da.isel({d: 0})
         da.plot(ax=ax, marker="o")
+        das = ds.sel(station=de_bilt_id)[var].squeeze(drop=True)
+        das.plot(ax=ax, marker="x", color="C1", label="Open Data")
         ax.set_title(
             f"{var} — {da.attrs.get('long_name', var)} ({da.attrs.get('units', '?')})"
         )
         ax.grid(alpha=0.3)
     fig.suptitle(
-        f"Daily values at De Bilt, {START.date()} to {END.date()} (EDR position query)"
+        f"Daily values at De Bilt, {START.date()} to {END.date()} (EDR location query)"
     )
     fig.tight_layout()
     plt.show()
@@ -372,14 +403,19 @@ if ts is not None:
 
 # %%
 if edr_available:
-    area = client.edr.area(
-        COLLECTION,
-        bbox=NL_BBOX,
-        datetime=(START, END),
-        parameters=PARAMETERS,
-    )
-    print("All stations within the NL bounding box:")
-    print(area)
+    try:
+        area = client.edr.area(
+            COLLECTION,
+            bbox=NL_BBOX,
+            start_time=START,
+            end_time=END,
+            parameters=PARAMETERS,
+        )
+        print("All stations within the NL bounding box:")
+        print(area)
+    except knmidata.KNMIHTTPError as exc:
+        # not every collection supports every query type
+        print(f"Area query not available for this collection: {exc}")
 
 # %% [markdown]
 # ## Open Data vs EDR — what did we just see?

@@ -25,7 +25,9 @@ def _to_float_array(values: list[Any]) -> np.ndarray:
         return np.array(values, dtype=object)
 
 
-def parse_coverage(payload: dict[str, Any]) -> xr.Dataset:
+def parse_coverage(
+    payload: dict[str, Any], shared_parameters: dict[str, Any] | None = None
+) -> xr.Dataset:
     """Parse a single OGC CoverageJSON coverage into an xarray.Dataset.
 
     Dimension order follows the order of the axes in ``domain.axes``, matching
@@ -35,6 +37,10 @@ def parse_coverage(payload: dict[str, Any]) -> xr.Dataset:
     ----------
     payload : dict[str, Any]
         A single CoverageJSON coverage object.
+    shared_parameters : dict[str, Any] | None, default=None
+        Parameter metadata from the enclosing CoverageCollection, used when the
+        coverage itself has no "parameters" member (KNMI puts them at the
+        collection level and only "ranges" in each coverage).
 
     Returns
     -------
@@ -54,8 +60,11 @@ def parse_coverage(payload: dict[str, Any]) -> xr.Dataset:
 
     shape = tuple(len(coords[d]) for d in dims)
     data_vars: dict[str, Any] = {}
-    parameters = payload.get("parameters", {})
+    parameters = payload.get("parameters") or shared_parameters or {}
     ranges = payload.get("ranges", {})
+    if not parameters and ranges:
+        # no parameter metadata: still expose the ranges as data variables
+        parameters = {range_id: {} for range_id in ranges}
 
     for param_id, param_meta in parameters.items():
         if param_id not in ranges:
@@ -101,7 +110,12 @@ def parse_coveragejson(payload: dict[str, Any]) -> xr.Dataset:
         Multidimensional dataset.
     """
     if payload.get("type") == "CoverageCollection" or "coverages" in payload:
-        coverages = [parse_coverage(c) for c in payload.get("coverages", [])]
+        # KNMI puts "parameters" at the collection level; each coverage only
+        # carries "ranges".
+        shared_parameters = payload.get("parameters", {})
+        coverages = [
+            parse_coverage(c, shared_parameters) for c in payload.get("coverages", [])
+        ]
         if not coverages:
             return xr.Dataset()
         if all("station" in ds.dims for ds in coverages):

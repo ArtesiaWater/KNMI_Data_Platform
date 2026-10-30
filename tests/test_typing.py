@@ -7,7 +7,6 @@ from knmidata import _typing
 def test_aliases_defined_in_typing_module():
     for name in (
         "TimeLike",
-        "EDRDatetime",
         "PathLike",
         "FilePaths",
         "Coords",
@@ -26,7 +25,6 @@ def test_aliases_defined_in_typing_module():
 def test_aliases_exported_at_package_level():
     for name in (
         "TimeLike",
-        "EDRDatetime",
         "PathLike",
         "FilePaths",
         "Coords",

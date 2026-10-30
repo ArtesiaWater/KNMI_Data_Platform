@@ -18,9 +18,6 @@ T = TypeVar("T")
 TimeLike: TypeAlias = str | pd.Timestamp | datetime | date
 """Accepted time argument: ISO-8601 string, pandas Timestamp, datetime, or date."""
 
-EDRDatetime: TypeAlias = TimeLike | tuple[TimeLike, TimeLike]
-"""EDR datetime argument: a single time or a (start, end) interval tuple."""
-
 # --- paths ------------------------------------------------------------------
 PathLike: TypeAlias = str | Path
 """Anything path-like: a string or pathlib.Path."""

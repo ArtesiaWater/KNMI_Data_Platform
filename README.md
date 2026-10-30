@@ -82,15 +82,21 @@ import knmidata
 
 with knmidata.KNMIClient() as client:
     print(client.edr.collections())  # available collections
-    meta = client.edr.collection("hourly-in-situ-meteorological-observations")
-    print(client.edr.locations("hourly-in-situ-meteorological-observations"))
+    meta = client.edr.collection("daily-in-situ-meteorological-observations")
+    print(client.edr.locations("daily-in-situ-meteorological-observations"))
 
-    ds = client.edr.position(
-        "hourly-in-situ-meteorological-observations",
-        coords=(4.89, 52.37),  # De Bilt: lon, lat
-        datetime="2024-06-01T00:00:00Z/2024-06-07T00:00:00Z",
-        parameters=["T", "RH"],
+    # daily time series at De Bilt (station WSI 06260): RH = precipitation
+    # sum, TG = mean temperature, EV24 = Makkink evaporation. Note: for
+    # station collections use /locations/{id} — /position with a point can
+    # return 404 "no stations".
+    ts = client.edr.location_data(
+        "daily-in-situ-meteorological-observations",
+        "06260",  # De Bilt; find ids via client.edr.locations(...)
+        start_time="2026-06-01",
+        end_time="2026-06-08",
+        parameters=["RH", "TG", "EV24"],
     )
+    ts["TG"].plot()  # needs matplotlib
 ```
 
 ### Sync client
@@ -110,18 +116,19 @@ with knmidata.KNMIClient() as client:
     ts = client.edr.area(
         "Tg1",
         bbox=(3.0, 50.5, 7.5, 53.7),
-        datetime="2024-06-01/2024-06-30",
+        start_time="2024-06-01",
+        end_time="2024-06-30",
         parameters=["TG"],
     )
 ```
 
 ## Examples
 
-See [docs/example_hourly_in_situ_observations.py](docs/example_hourly_in_situ_observations.py) — a notebook-style (`# %%` cells) walkthrough that fetches the [hourly-in-situ-meteorological-observations-validated](https://dataplatform.knmi.nl/dataset/access/hourly-in-situ-meteorological-observations-validated-1-0) dataset via both the Open Data API and the EDR API, explaining how KNMI data is organized and when to use which API:
+See [docs/example_daily_in_situ_observations.py](docs/example_daily_in_situ_observations.py) — a notebook-style (`# %%` cells) walkthrough that fetches the [daily-in-situ-meteorological-observations](https://dataplatform.knmi.nl/dataset/access/daily-in-situ-meteorological-observations-1-0) dataset via both the Open Data API and the EDR API (including a plot of the RH/TG/EV24 time series at De Bilt), explaining how KNMI data is organized and when to use which API:
 
 ```bash
-python docs/example_hourly_in_situ_observations.py   # as a script
-jupytext --to notebook docs/example_hourly_in_situ_observations.py  # as a notebook
+python docs/example_daily_in_situ_observations.py   # as a script
+jupytext --to notebook docs/example_daily_in_situ_observations.py  # as a notebook
 ```
 
 ## Development
