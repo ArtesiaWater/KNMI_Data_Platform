@@ -1,28 +1,29 @@
-"""Notebook-style example: KNMI hourly in-situ observations via Open Data and EDR."""
+"""Notebook-style example: KNMI daily in-situ observations via Open Data and EDR."""
 
 # %% [markdown]
-# # Hourly weather observations from KNMI: Open Data API vs EDR API
+# # Daily weather observations from KNMI: Open Data API vs EDR API
 #
 # This notebook-style script shows how to get data from the
 # [KNMI Data Platform](https://dataplatform.knmi.nl/) with the `knmidata`
 # Python package, using the dataset
-# [**hourly-in-situ-meteorological-observations-validated**](https://dataplatform.knmi.nl/dataset/access/hourly-in-situ-meteorological-observations-validated-1-0)
-# (hourly observations from the Dutch automatic weather stations, validated).
+# [**daily-in-situ-meteorological-observations**](https://dataplatform.knmi.nl/dataset/access/daily-in-situ-meteorological-observations-1-0)
+# (daily observations from the Dutch automatic weather stations).
 #
 # We fetch the same dataset through **both** APIs and compare:
 #
 # 1. **Open Data API** — download whole files (NetCDF) and open them as one
 #    `xarray.Dataset`.
-# 2. **EDR API** — run spatio-temporal *queries* (position / area) and parse
-#    the response directly into an `xarray.Dataset`.
+# 2. **EDR API** — run spatio-temporal *queries* (position / area), parse the
+#    response into an `xarray.Dataset`, and plot the time series of
+#    precipitation (RH), temperature (TG) and evaporation (EV24) at De Bilt.
 #
 # The file uses the `# %%` "percent" cell format: in VS Code / Jupyter /
 # Spyder it renders as a notebook, and it also runs as a plain script:
 #
 # ```bash
-# python docs/example_hourly_in_situ_observations.py
+# python docs/example_daily_in_situ_observations.py
 # # or convert to a real notebook:
-# jupytext --to notebook docs/example_hourly_in_situ_observations.py
+# jupytext --to notebook docs/example_daily_in_situ_observations.py
 # ```
 
 # %% [markdown]
@@ -30,8 +31,8 @@
 #
 # - The **KNMI Data Platform** (`dataplatform.knmi.nl`) is the data catalog.
 #   Everything in it is a **dataset** with a unique *name* and *version*
-#   (e.g. `hourly-in-situ-meteorological-observations-validated`, version
-#   `1.0`). The version matters: the API paths contain both.
+#   (e.g. `daily-in-situ-meteorological-observations`, version `1.0`). The
+#   version matters: the API paths contain both.
 # - Datasets come in two flavours:
 #   - **in-situ observations**: point measurements at automatic weather
 #     stations (AWS), e.g. temperature, wind, precipitation per station;
@@ -45,9 +46,11 @@
 #     *queries* — you ask for a point, area, or cube and get back a structured
 #     payload (CoverageJSON), no files involved.
 # - Times are **UTC** everywhere. KNMI file names embed the observation time
-#   (e.g. `..._202406011200.nc` = 2024-06-01 12:00 UTC).
-# - "validated" in the dataset name means the observations have passed KNMI's
-#   quality control (near-real-time datasets are not validated yet).
+#   (e.g. `..._20260601.nc` = 2026-06-01).
+# - This dataset holds **daily** values per station. The variable codes are the
+#   classic KNMI "etmaalwaarden" codes: **TG** = daily mean temperature (°C),
+#   **RH** = daily precipitation sum (mm), **EV24** = Makkink reference
+#   evaporation (mm), plus TN/TX (min/max temperature), FG (mean wind), etc.
 
 # %% [markdown]
 # ## The two APIs at a glance
@@ -56,7 +59,7 @@
 # |---|---|---|
 # | Base URL | `api.dataplatform.knmi.nl/open-data/v1` | `api.dataplatform.knmi.nl/edr/v1` |
 # | Model | list *files* in a dataset, get a presigned download URL per file | query a *collection* by location/time/parameters |
-# | Typical use | bulk download of whole files / long history | targeted extracts: one station, one day, a few parameters |
+# | Typical use | bulk download of whole files / long history | targeted extracts: one station, one period, a few parameters |
 # | You get | NetCDF/HDF5 files on disk → `xarray` | CoverageJSON/GeoJSON → parsed to `xarray.Dataset` in memory |
 # | Granularity | whole files (all stations/variables in the file) | exactly the queried subset |
 # | Auth | anonymous key possible (shared, rate-limited) | registered key required (dedicated quota) |
@@ -100,6 +103,9 @@
 #    `export KNMI_EDR_KEY=...` in your profile or before launching Jupyter.
 # 3. **Key file**: set `KNMI_API_KEY_FILE=/path/to/key.txt` (chmod 600)
 #    instead of the key itself; `knmidata` reads the file for you.
+# 4. **GitHub Actions**: store the key as a repository *secret* and pass it
+#    to the workflow step as an env var (see `.github/workflows/notebooks.yaml`,
+#    which executes this notebook in CI) — GitHub masks secret values in logs.
 #
 # Additional hygiene: `knmidata` never prints or logs the key (check with
 # `bool(os.environ.get("KNMI_API_KEY"))`, not by printing it); when sharing an
@@ -115,16 +121,22 @@ import pandas as pd
 import knmidata
 
 # The dataset from the KNMI Data Platform page linked above.
-DATASET_NAME = "hourly-in-situ-meteorological-observations-validated"
+DATASET_NAME = "daily-in-situ-meteorological-observations"
 DATASET_VERSION = "1.0"
-COLLECTION = "hourly-in-situ-meteorological-observations-validated"  # EDR collection id
+COLLECTION = "daily-in-situ-meteorological-observations"  # EDR collection id
 
-# De Bilt (KNMI's own station, WMO/WSI 260), as (lon, lat).
+# The variables we plot below (classic KNMI daily "etmaalwaarden" codes):
+# RH = daily precipitation sum (mm), TG = daily mean temperature (degC),
+# EV24 = Makkink reference evaporation (mm).
+PARAMETERS = ["RH", "TG", "EV24"]
+
+# De Bilt (KNMI's own station, WSI 260), as (lon, lat).
 STATION_COORDS = (4.89, 52.37)
 # Bounding box over the Netherlands: (minx, miny, maxx, maxy).
 NL_BBOX = (3.0, 50.5, 7.5, 53.7)
 
 # Time arguments accept str, pd.Timestamp, datetime, or date; naive = UTC.
+# One week of daily values (change to e.g. a month for a longer time series).
 START = pd.Timestamp("2026-06-01")
 END = pd.Timestamp("2026-06-08")
 
@@ -132,8 +144,7 @@ END = pd.Timestamp("2026-06-08")
 # memory only and delete the files afterwards).
 CACHE_DIR = Path("data")
 
-print(f"knmidata {knmidata.__version__}")
-
+knmidata.show_versions()
 # %% [markdown]
 # ## Setup: create a client
 #
@@ -154,7 +165,7 @@ import os
 try:
     from dotenv import load_dotenv
 
-    load_dotenv(".env.example")
+    load_dotenv(".env")
 except ImportError:
     pass  # alternative: export KNMI_API_KEY / KNMI_EDR_KEY in your shell
 
@@ -164,7 +175,8 @@ print("KNMI_EDR_KEY set:", bool(os.environ.get("KNMI_EDR_KEY")))
 
 try:
     client = knmidata.KNMIClient(
-        api_key=os.environ.get("KNMI_API_KEY"), edr_key=os.environ.get("KNMI_EDR_KEY")
+        api_key=os.environ.get("KNMI_API_KEY") or None,
+        edr_key=os.environ.get("KNMI_EDR_KEY") or None,
     )  # keys are resolved from the environment
     client_ok = True
 except knmidata.KNMIAuthError as exc:
@@ -208,8 +220,8 @@ if client_ok:
 
 # %% [markdown]
 # Now download just the first two files of that period and open them as a
-# single dataset. Each hourly file contains all stations for that hour, so
-# even `max_files=2` already gives you a 2-hour, all-stations slice.
+# single dataset. Each **daily** file contains all stations for that day, so
+# even `max_files=2` already gives you a 2-day, all-stations slice.
 #
 # `start_time`/`end_time` are normalized to UTC ISO-8601 (`...Z`) before being
 # sent — passing `pd.Timestamp` objects is fine.
@@ -223,7 +235,7 @@ if client_ok:
             DATASET_VERSION,
             start_time=START,
             end_time=END,
-            max_files=2,  # remove this to download the whole week
+            max_files=2,  # remove this to download the whole period
             cache_dir=CACHE_DIR,
         )
     except knmidata.KNMIHTTPError as exc:
@@ -233,7 +245,7 @@ if client_ok:
 
 if ds is not None:
     print(f"\nDownloaded files are cached in: {CACHE_DIR.resolve()}")
-    print("\nCombined dataset (2 hourly files):")
+    print("\nCombined dataset (2 daily files):")
     print(ds)
     print("\nVariables in the dataset:", list(ds.data_vars))
 
@@ -244,7 +256,8 @@ if ds is not None:
 # **collections**:
 #
 # - `GET /collections` / `GET /collections/{id}` — what's available: which
-#   parameters (variables), which output formats, the spatial/temporal extent.
+#   parameters (variables, under the `parameter-names` key), which output
+#   formats, the spatial/temporal extent.
 # - `GET /collections/{id}/locations` — the measurement locations (GeoJSON).
 # - Data queries: `/position` (point, WKT `POINT(lon lat)`), `/area` (polygon
 #   from a bbox), `/cube` (3D: bbox + `z`), with query parameters:
@@ -256,16 +269,17 @@ if ds is not None:
 #
 # Instead of files, you get a structured JSON payload describing exactly the
 # queried cube of data, which `knmidata` parses into an `xarray.Dataset`
-# in memory. That makes EDR ideal for "give me temperature at De Bilt for last
-# week" without downloading gigabytes of files.
+# in memory. That makes EDR ideal for "give me temperature, precipitation and
+# evaporation at De Bilt for last week" without downloading whole files.
 
 # %%
-try:
-    collections = client.edr.collections()
-    edr_available = True
-except knmidata.KNMIAuthError as exc:
-    edr_available = False
-    print(f"EDR API needs a registered key — skipping the EDR section.\n{exc}")
+edr_available = False
+if client_ok:
+    try:
+        collections = client.edr.collections()
+        edr_available = True
+    except knmidata.KNMIAuthError as exc:
+        print(f"EDR API needs a registered key — skipping the EDR section.\n{exc}")
 
 if edr_available:
     print(
@@ -273,13 +287,17 @@ if edr_available:
     )
 
     # Collection metadata: description, extent, and the available parameters.
+    # (The wire key is "parameter-names"; fall back to other spellings.)
     meta = client.edr.collection(COLLECTION)
-    parameter_ids = list(meta.get("parameters", {}))
+    params_meta = meta.get("parameter_names")
+
     print(
-        f"\nCollection '{COLLECTION}': {len(parameter_ids)} parameters, e.g. "
-        + ", ".join(parameter_ids[:5])
+        f"\nCollection '{COLLECTION}': {len(params_meta)} parameters, e.g. "
+        + ", ".join(list(params_meta)[:8])
     )
-    parameters = parameter_ids[:2] or None  # query just the first two variables
+    # Check that the variables we want are actually in this collection.
+    missing = [p for p in PARAMETERS if p not in params_meta]
+    print(f"Requested {PARAMETERS}; missing from collection: {missing or 'none'}")
 
 # %% [markdown]
 # ### Locations: where are the stations?
@@ -299,23 +317,52 @@ if edr_available:
         )
 
 # %% [markdown]
-# ### Position query: time series at De Bilt
+# ### Position query: daily time series at De Bilt
 #
 # `coords=POINT(lon lat)` asks for the station nearest to that point.
-# `datetime=(START, END)` becomes an RFC 3339 interval. The response is
-# CoverageJSON with a `time` axis and a `station` axis — parsed into a
-# dataset where each queried parameter is a data variable with units.
+# `datetime=(START, END)` becomes an RFC 3339 interval. We ask for the three
+# variables **RH** (precipitation sum), **TG** (mean temperature) and **EV24**
+# (Makkink evaporation). The CoverageJSON response has a `time` axis and a
+# `station` axis — parsed into a dataset where each parameter is a data
+# variable with units and a long name.
 
 # %%
+ts = None
 if edr_available:
     ts = client.edr.position(
         COLLECTION,
         coords=STATION_COORDS,
         datetime=(START, END),
-        parameters=parameters,
+        parameters=PARAMETERS,
     )
-    print("Time series at the station nearest to De Bilt:")
+    print("Daily time series at the station nearest to De Bilt:")
     print(ts)
+
+# %% [markdown]
+# ### Plot the EDR time series
+#
+# The parsed dataset is a plain `xarray.Dataset`, so plotting is one line per
+# variable (needs `matplotlib`, included in the `notebooks` extra).
+
+# %%
+if ts is not None:
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(
+        len(PARAMETERS), 1, figsize=(9, 2.5 * len(PARAMETERS)), sharex=True
+    )
+    for ax, var in zip(axes, PARAMETERS, strict=True):
+        da = ts[var].isel(station=0) if "station" in ts[var].dims else ts[var]
+        da.plot(ax=ax, marker="o")
+        ax.set_title(
+            f"{var} — {da.attrs.get('long_name', var)} ({da.attrs.get('units', '?')})"
+        )
+        ax.grid(alpha=0.3)
+    fig.suptitle(
+        f"Daily values at De Bilt, {START.date()} to {END.date()} (EDR position query)"
+    )
+    fig.tight_layout()
+    plt.show()
 
 # %% [markdown]
 # ### Area query: all stations in a bounding box
@@ -329,7 +376,7 @@ if edr_available:
         COLLECTION,
         bbox=NL_BBOX,
         datetime=(START, END),
-        parameters=parameters,
+        parameters=PARAMETERS,
     )
     print("All stations within the NL bounding box:")
     print(area)
@@ -337,9 +384,9 @@ if edr_available:
 # %% [markdown]
 # ## Open Data vs EDR — what did we just see?
 #
-# - **Same dataset, two access patterns.** Open Data gave us whole hourly
+# - **Same dataset, two access patterns.** Open Data gave us whole daily
 #   *files* (all stations, all variables in the file) assembled along `time`;
-#   EDR gave us exactly the queried subset (2 parameters, 1 station or all
+#   EDR gave us exactly the queried subset (3 variables, 1 station or all
 #   stations in a bbox, 1 week) as an in-memory dataset.
 # - **Data volume.** Open Data moves whole files (MBs-GBs each); EDR moves
 #   only the queried slice (KBs-MBs). EDR is much cheaper for targeted
@@ -350,7 +397,7 @@ if edr_available:
 # - **Auth/quota.** Open Data works anonymously within a shared rate limit;
 #   EDR needs your registered key with a dedicated quota.
 # - Both paths end in the same place: an `xarray.Dataset` you can analyze,
-#   plot, or write to disk.
+#   plot (as above), or write to disk.
 
 # %%
 if client_ok:
