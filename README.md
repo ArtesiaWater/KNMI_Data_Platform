@@ -22,7 +22,7 @@ export KNMI_OPENDATA_API_KEY="<your open data key>"
 export KNMI_EDR_API_KEY="<your edr key>"   # EDR has no anonymous key
 ```
 
-For Open Data only, you can omit the key entirely and the public anonymous key is used automatically (shared rate limit). To keep keys out of notebooks/scripts, use a gitignored `.env` file (`pip install knmidata[dotenv]`, then `from dotenv import load_dotenv; load_dotenv()`), a key file (`KNMI_OPENDATA_API_KEY_FILE=/path/to/key.txt`, chmod 600 — `knmidata` reads it for you), or pass `api_key=`/`edr_key=` explicitly. `knmidata` never prints or logs keys.
+For Open Data only, you can omit the key entirely and the public anonymous key is used automatically (shared rate limit).
 
 ## Usage
 
