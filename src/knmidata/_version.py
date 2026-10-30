@@ -23,7 +23,6 @@ def get_versions() -> dict[str, str]:
         "python": python_version(),
         "knmidata": __version__,
         "httpx": _dist_version("httpx"),
-        "pandas": _dist_version("pandas"),
         "xarray": _dist_version("xarray"),
         "h5netcdf": _dist_version("h5netcdf"),
     }

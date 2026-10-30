@@ -124,6 +124,13 @@ class AsyncKNMIClient:
             **open_dataset_kwargs,
         )
 
+    def __repr__(self) -> str:
+        """Repr showing the sub-clients (never any API keys)."""
+        return (
+            f"{type(self).__name__}(opendata={self._opendata!r}, "
+            f"edr={self._edr_client!r})"
+        )
+
     async def aclose(self) -> None:
         """Close the underlying HTTP transport session."""
         await self._transport.aclose()
@@ -160,6 +167,10 @@ class _SyncFacade:
         AsyncOpenDataClient,
     )
     """Async client classes that get wrapped recursively as nested facades."""
+
+    def __repr__(self) -> str:
+        """Repr showing the wrapped async client class (no credentials)."""
+        return f"{type(self).__name__}(target={type(self._target).__name__})"
 
     def __init__(self, run: RunCoroutine[T], target: Any) -> None:
         self._run = run
@@ -298,6 +309,10 @@ class KNMIClient:
                 **open_dataset_kwargs,
             )
         )
+
+    def __repr__(self) -> str:
+        """Repr showing the wrapped async client and closed state."""
+        return f"{type(self).__name__}(client={self._async_client!r}, closed={self._closed})"
 
     def close(self) -> None:
         """Close the underlying connection pool and stop the background loop."""

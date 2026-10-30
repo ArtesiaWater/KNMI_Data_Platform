@@ -37,6 +37,13 @@ class FileDownloadInfo:
     last_modified: str
     url: str
 
+    def __repr__(self) -> str:
+        """Repr that masks the presigned URL (it is a temporary credential)."""
+        return (
+            f"{type(self).__name__}(content_type={self.content_type!r}, "
+            f"size={self.size}, last_modified={self.last_modified!r}, url='***')"
+        )
+
 
 @dataclass(slots=True, kw_only=True)
 class AsyncFileDownloader:
@@ -52,6 +59,12 @@ class AsyncFileDownloader:
 
     transport: AsyncTransport
     auth: httpx.Auth
+
+    def __repr__(self) -> str:
+        """Concise repr showing transport and auth (auth masks any API key)."""
+        return (
+            f"{type(self).__name__}(transport={self.transport!r}, auth={self.auth!r})"
+        )
 
     async def get_download_info(
         self, dataset_name: str, dataset_version: str, filename: str

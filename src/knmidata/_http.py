@@ -44,6 +44,8 @@ class AsyncTransport:
         max_retries: int = 3,
         retry_backoff: float = 0.5,
     ) -> None:
+        self.max_concurrency = max_concurrency
+        self.timeout = timeout
         self.semaphore = asyncio.Semaphore(max_concurrency)
         self.max_retries = max_retries
         self.retry_backoff = retry_backoff
@@ -223,6 +225,13 @@ class AsyncTransport:
                 await response.aread()
             self._raise_for_status(response)
             yield response
+
+    def __repr__(self) -> str:
+        """Repr without the noisy httpx client/semaphore objects."""
+        return (
+            f"{type(self).__name__}(max_concurrency={self.max_concurrency}, "
+            f"timeout={self.timeout}, max_retries={self.max_retries})"
+        )
 
     async def aclose(self) -> None:
         """Close the underlying HTTP client session."""

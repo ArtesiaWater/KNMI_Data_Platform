@@ -97,6 +97,10 @@ class APIKeyAuth(httpx.Auth):
     api_key: str
     header_name: str = "Authorization"
 
+    def __repr__(self) -> str:
+        """Repr that never exposes the API key."""
+        return f"{type(self).__name__}(api_key='***', header_name={self.header_name!r})"
+
     def auth_flow(self, request: httpx.Request) -> AuthFlow:
         """Inject the raw API key into the specified header."""
         request.headers[self.header_name] = self.api_key
