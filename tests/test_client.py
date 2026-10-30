@@ -169,12 +169,12 @@ def test_sync_facade_completion_and_docstrings():
 
     with knmidata.KNMIClient(api_key="key", edr_key="edr-key") as client:
         facade = client.edr
-        # tab-completion: wrapped methods show up in dir()
+        assert isinstance(facade, _SyncFacade)
+        # runtime tab-completion: wrapped methods show up in dir()
         assert "position" in dir(facade)
         assert "location_data" in dir(facade)
         # docstring and signature are the async method's own
         assert facade.position.__doc__ == edr_mod.AsyncEDRClient.position.__doc__
-        # signature matches the bound async method (i.e. without 'self')
         facade_sig = inspect.signature(facade.position)
         async_sig = inspect.signature(edr_mod.AsyncEDRClient.position)
         assert list(facade_sig.parameters) == list(async_sig.parameters)[1:]

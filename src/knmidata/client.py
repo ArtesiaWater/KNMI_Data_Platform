@@ -22,7 +22,12 @@ import xarray as xr
 
 from knmidata._auth import resolve_edr_auth, resolve_open_data_auth
 from knmidata._http import AsyncTransport
-from knmidata._typing import PathLike, RunCoroutine, T, TimeLike
+from knmidata._typing import (
+    PathLike,
+    RunCoroutine,
+    T,
+    TimeLike,
+)
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.opendata.catalog import AsyncCatalogClient
 from knmidata.opendata.client import AsyncOpenDataClient
@@ -137,8 +142,8 @@ class _SyncFacade:
 
     Coroutine methods are bound as real attributes at construction time (with
     `functools.wraps`, so `__doc__`/`__name__`/`__wrapped__` and the signature are
-    preserved), which makes tab-completion (`dir()`) and `help()` work. Nested
-    sub-clients (e.g. `client.opendata.catalog`) are wrapped recursively.
+    preserved), which makes runtime tab-completion (`dir()`) and `help()` work.
+    Nested sub-clients (e.g. `client.opendata.catalog`) are wrapped recursively.
 
     Parameters
     ----------
