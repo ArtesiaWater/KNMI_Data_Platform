@@ -6,6 +6,7 @@ import respx
 
 import knmidata
 from knmidata._exceptions import KNMIError, NoFilesFoundError
+from knmidata.config import ANONYMOUS_KEY_DOCS_URL
 from knmidata.config import EDR_BASE_URL as EDR
 from knmidata.config import OPENDATA_BASE_URL as OPENDATA
 
@@ -44,25 +45,25 @@ def _mock_open_data(router, filenames, netcdf_bytes):
         )
 
 
-async def test_async_open_dataset_loads_into_memory(netcdf_bytes):
+async def test_async_get_dataset_loads_into_memory(netcdf_bytes):
     with respx.mock(assert_all_called=False) as router:
         _mock_open_data(router, ["f1.nc"], netcdf_bytes)
         async with knmidata.AsyncKNMIClient(api_key="key") as client:
-            ds = await client.open_dataset("ds", "1.0")
+            ds = await client.get_dataset("ds", "1.0")
     assert "temp" in ds
     assert ds["temp"].values.tolist() == [1.0]
 
 
-async def test_async_open_dataset_with_cache_dir(netcdf_bytes, tmp_path):
+async def test_async_get_dataset_with_cache_dir(netcdf_bytes, tmp_path):
     with respx.mock(assert_all_called=False) as router:
         _mock_open_data(router, ["f1.nc"], netcdf_bytes)
         async with knmidata.AsyncKNMIClient(api_key="key") as client:
-            ds = await client.open_dataset("ds", "1.0", cache_dir=tmp_path)
+            ds = await client.get_dataset("ds", "1.0", cache_dir=tmp_path)
     assert (tmp_path / "f1.nc").exists()
     assert "temp" in ds
 
 
-async def test_open_dataset_no_files_raises(netcdf_bytes):
+async def test_get_dataset_no_files_raises(netcdf_bytes):
     with respx.mock(assert_all_called=False) as router:
         router.get(FILES_URL).mock(
             return_value=httpx.Response(
@@ -79,14 +80,14 @@ async def test_open_dataset_no_files_raises(netcdf_bytes):
         )
         async with knmidata.AsyncKNMIClient(api_key="key") as client:
             with pytest.raises(NoFilesFoundError):
-                await client.open_dataset("ds", "1.0")
+                await client.get_dataset("ds", "1.0")
 
 
-async def test_open_dataset_max_files_and_pattern(netcdf_bytes, tmp_path):
+async def test_get_dataset_max_files_and_pattern(netcdf_bytes, tmp_path):
     with respx.mock(assert_all_called=False) as router:
         _mock_open_data(router, ["a.nc", "b.nc", "c.txt"], netcdf_bytes)
         async with knmidata.AsyncKNMIClient(api_key="key") as client:
-            ds = await client.open_dataset(
+            ds = await client.get_dataset(
                 "ds",
                 "1.0",
                 cache_dir=tmp_path / "cache",
@@ -108,8 +109,8 @@ def test_sync_client_can_be_called_repeatedly(netcdf_bytes):
     with respx.mock(assert_all_called=False) as router:
         _mock_open_data(router, ["f1.nc"], netcdf_bytes)
         with knmidata.KNMIClient(api_key="key") as client:
-            ds1 = client.open_dataset("ds", "1.0")
-            ds2 = client.open_dataset("ds", "1.0")
+            ds1 = client.get_dataset("ds", "1.0")
+            ds2 = client.get_dataset("ds", "1.0")
     assert ds1["temp"].values.tolist() == [1.0]
     assert ds2["temp"].values.tolist() == [1.0]
 
@@ -169,17 +170,20 @@ def test_sync_facade_completion_and_docstrings():
         facade = client.edr
         assert isinstance(facade, _SyncFacade)
         # runtime tab-completion: wrapped methods show up in dir()
-        assert "position" in dir(facade)
-        assert "location_data" in dir(facade)
+        assert "get_position" in dir(facade)
+        assert "get_location" in dir(facade)
         # docstring and signature are the async method's own
-        assert facade.position.__doc__ == edr_mod.AsyncEDRClient.position.__doc__
-        facade_sig = inspect.signature(facade.position)
-        async_sig = inspect.signature(edr_mod.AsyncEDRClient.position)
+        assert (
+            facade.get_position.__doc__ == edr_mod.AsyncEDRClient.get_position.__doc__
+        )
+        facade_sig = inspect.signature(facade.get_position)
+        async_sig = inspect.signature(edr_mod.AsyncEDRClient.get_position)
         assert list(facade_sig.parameters) == list(async_sig.parameters)[1:]
         assert facade_sig.return_annotation == async_sig.return_annotation
-        assert facade.position.__wrapped__ is not None
+        assert facade.get_position.__wrapped__ is not None
         # the opendata namespace methods are bound on the facade too
         assert "list_files" in dir(client.opendata)
+        assert "get_dataset" in dir(client.opendata)
         assert "open_dataset" in dir(client.opendata)
         assert client.opendata.list_files.__doc__
 
@@ -193,34 +197,45 @@ def test_sync_edr_facade(netcdf_bytes):
             return_value=httpx.Response(200, json=coveragejson_payload())
         )
         with knmidata.KNMIClient(api_key="key", edr_key="edr-key") as client:
-            ds = client.edr.position("c1", coords=(4.89, 52.37))
+            ds = client.edr.get_position("c1", coords=(4.89, 52.37))
     assert ds["T"].values.tolist() == [[5.0], [6.0]]
 
 
-def test_module_level_open_dataset(netcdf_bytes):
+def test_module_level_get_dataset(netcdf_bytes):
     with respx.mock(assert_all_called=False) as router:
         _mock_open_data(router, ["f1.nc"], netcdf_bytes)
-        ds = knmidata.open_dataset("ds", "1.0", api_key="key")
+        ds = knmidata.get_dataset("ds", "1.0", api_key="key")
     assert ds["temp"].values.tolist() == [1.0]
 
 
-async def test_open_dataset_forwards_combine_kwargs(netcdf_bytes, tmp_path):
+async def test_get_dataset_forwards_combine_kwargs(netcdf_bytes, tmp_path):
     # both files carry the same time coordinate; combine="nested" concatenates
     # along concat_dim, which only works if the kwargs reach files_to_dataset
     with respx.mock(assert_all_called=False) as router:
         _mock_open_data(router, ["f1.nc", "f2.nc"], netcdf_bytes)
         async with knmidata.AsyncKNMIClient(api_key="key") as client:
-            ds = await client.open_dataset(
+            ds = await client.get_dataset(
                 "ds", "1.0", cache_dir=tmp_path, combine="nested", concat_dim="time"
             )
     assert ds.sizes["time"] == 2
+
+
+async def test_get_dataset_reuses_files_already_on_disk(netcdf_bytes, tmp_path):
+    with respx.mock(assert_all_called=False) as router:
+        _mock_open_data(router, ["f1.nc"], netcdf_bytes)
+        async with knmidata.AsyncKNMIClient(api_key="key") as client:
+            await client.get_dataset("ds", "1.0", cache_dir=tmp_path)
+            await client.get_dataset("ds", "1.0", cache_dir=tmp_path)
+        # read router.calls before the mock context exits (calls are cleared on stop)
+        s3_calls = [c for c in router.calls if "fake-s3" in str(c.request.url)]
+    assert len(s3_calls) == 1  # second call reused the cached file, no re-download
 
 
 def test_sync_client_use_after_close_raises():
     with knmidata.KNMIClient(api_key="key") as client:
         pass
     with pytest.raises(KNMIError, match="closed"):
-        client.open_dataset("ds", "1.0")
+        client.get_dataset("ds", "1.0")
     client.close()  # idempotent
 
 
@@ -228,6 +243,52 @@ def test_sync_facades_are_cached():
     with knmidata.KNMIClient(api_key="key", edr_key="edr-key") as client:
         assert client.opendata is client.opendata
         assert client.edr is client.edr
+
+
+def test_module_level_get_timeseries():
+    endpoint = f"{EDR}/collections/c1/locations/06260"
+    payload = {
+        "domain": {"axes": {"t": {"values": ["2026-06-01T00:00:00Z"]}}},
+        "parameters": {"TG": {"unit": {"symbol": "C"}, "description": {"en": "t"}}},
+        "ranges": {"TG": {"values": [18.5]}},
+    }
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(endpoint).mock(
+            return_value=httpx.Response(200, json=payload)
+        )
+        ds = knmidata.get_timeseries(
+            "c1",
+            "06260",
+            start_time="2026-06-01",
+            end_time="2026-06-08",
+            parameters="TG",
+            edr_key="edr-key",
+        )
+        params = route.calls[0].request.url.params
+        assert params["parameter-name"] == "TG"
+        assert params["datetime"] == "2026-06-01T00:00:00Z/2026-06-08T00:00:00Z"
+        assert params["f"] == "CoverageJSON"
+        assert route.calls[0].request.headers["Authorization"] == "edr-key"
+    assert ds["TG"].values.tolist() == [18.5]
+
+
+async def test_edr_only_client_does_not_resolve_opendata_auth():
+    # an EDR-only client must not fetch the anonymous Open Data key (network)
+    endpoint = f"{EDR}/collections/c1/locations/06260"
+    payload = {
+        "domain": {"axes": {"t": {"values": ["2026-06-01T00:00:00Z"]}}},
+        "parameters": {"TG": {"unit": {"symbol": "C"}, "description": {"en": "t"}}},
+        "ranges": {"TG": {"values": [18.5]}},
+    }
+    with respx.mock(assert_all_called=False) as router:
+        docs_route = router.get(ANONYMOUS_KEY_DOCS_URL).mock(
+            side_effect=httpx.ConnectError("offline")
+        )
+        router.get(endpoint).mock(return_value=httpx.Response(200, json=payload))
+        async with knmidata.AsyncKNMIClient(edr_key="edr-key") as client:
+            ds = await client.get_timeseries("c1", "06260", parameters="TG")
+        assert docs_route.call_count == 0
+    assert ds["TG"].values.tolist() == [18.5]
 
 
 def test_version_and_exports():

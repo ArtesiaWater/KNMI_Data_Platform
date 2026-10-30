@@ -239,7 +239,7 @@ async def test_position_builds_query_and_parses(edr):
         route = router.get(endpoint).mock(
             return_value=httpx.Response(200, json=coveragejson_payload())
         )
-        ds = await edr.position(
+        ds = await edr.get_position(
             "c1",
             coords=(4.89, 52.37),
             start_time="2024-01-01T00:00:00Z",
@@ -272,7 +272,7 @@ async def test_area_sends_polygon(edr):
                 },
             )
         )
-        ds = await edr.area("c1", bbox=(3.0, 50.5, 7.5, 53.7))
+        ds = await edr.get_area("c1", bbox=(3.0, 50.5, 7.5, 53.7))
         params = route.calls[0].request.url.params
         assert (
             params["coords"]
@@ -296,7 +296,7 @@ async def test_cube_sends_bbox_and_z(edr):
                 },
             )
         )
-        await edr.cube("c1", bbox=(3.0, 50.5, 7.5, 53.7), z=(100, 500))
+        await edr.get_cube("c1", bbox=(3.0, 50.5, 7.5, 53.7), z=(100, 500))
         params = route.calls[0].request.url.params
         assert params["bbox"] == "3.0,50.5,7.5,53.7"
         assert params["z"] == "100/500"
@@ -314,14 +314,14 @@ async def test_datetime_accepts_timestamp_and_interval(edr):
             return_value=httpx.Response(200, json=payload)
         )
         # start only: naive Timestamp -> UTC, open interval 'start/..'
-        await edr.position(
+        await edr.get_position(
             "c1", coords=(4.89, 52.37), start_time=pd.Timestamp("2024-01-01 06:00")
         )
         assert (
             route.calls[0].request.url.params["datetime"] == "2024-01-01T06:00:00Z/.."
         )
         # start + end -> closed interval, tz-aware end converted to UTC
-        await edr.position(
+        await edr.get_position(
             "c1",
             coords=(4.89, 52.37),
             start_time=pd.Timestamp("2024-01-01"),
@@ -332,19 +332,21 @@ async def test_datetime_accepts_timestamp_and_interval(edr):
             == "2024-01-01T00:00:00Z/2024-01-02T00:00:00Z"
         )
         # end only -> '../end'
-        await edr.position("c1", coords=(4.89, 52.37), end_time="2024-01-02T00:00:00Z")
+        await edr.get_position(
+            "c1", coords=(4.89, 52.37), end_time="2024-01-02T00:00:00Z"
+        )
         assert (
             route.calls[2].request.url.params["datetime"] == "../2024-01-02T00:00:00Z"
         )
         # interval string passes through unchanged
-        await edr.position(
+        await edr.get_position(
             "c1", coords=(4.89, 52.37), start_time="2024-01-01T00:00:00Z/.."
         )
         assert (
             route.calls[3].request.url.params["datetime"] == "2024-01-01T00:00:00Z/.."
         )
         # no time filter -> no datetime param
-        await edr.position("c1", coords=(4.89, 52.37))
+        await edr.get_position("c1", coords=(4.89, 52.37))
         assert "datetime" not in route.calls[4].request.url.params
 
 
@@ -412,12 +414,7 @@ async def test_nearest_location(edr):
     assert near["distance_km"] < 2.0
 
 
-async def test_location_data_rejects_empty_id(edr):
-    with pytest.raises(ValueError, match="location_id"):
-        await edr.location_data("c1", "")
-
-
-async def test_location_data_query(edr):
+async def test_single_parameter_string_accepted(edr):
     endpoint = f"{EDR}/collections/c1/locations/06260"
     with respx.mock(assert_all_called=False) as router:
         route = router.get(endpoint).mock(
@@ -432,7 +429,32 @@ async def test_location_data_query(edr):
                 },
             )
         )
-        ds = await edr.location_data(
+        ds = await edr.get_location("c1", "06260", parameters="TG")
+        assert route.calls[0].request.url.params["parameter-name"] == "TG"
+    assert ds["TG"].values.tolist() == [18.5]
+
+
+async def test_get_location_rejects_empty_id(edr):
+    with pytest.raises(ValueError, match="location_id"):
+        await edr.get_location("c1", "")
+
+
+async def test_get_location_query(edr):
+    endpoint = f"{EDR}/collections/c1/locations/06260"
+    with respx.mock(assert_all_called=False) as router:
+        route = router.get(endpoint).mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "domain": {"axes": {"t": {"values": ["2026-06-01T00:00:00Z"]}}},
+                    "parameters": {
+                        "TG": {"unit": {"symbol": "C"}, "description": {"en": "t"}}
+                    },
+                    "ranges": {"TG": {"values": [18.5]}},
+                },
+            )
+        )
+        ds = await edr.get_location(
             "c1",
             "06260",
             start_time=pd.Timestamp("2026-06-01"),
@@ -463,6 +485,6 @@ async def test_geojson_output_format(edr):
                 },
             )
         )
-        ds = await edr.position("c1", coords=(4.89, 52.37), output_format="GeoJSON")
+        ds = await edr.get_position("c1", coords=(4.89, 52.37), output_format="GeoJSON")
         assert route.calls[0].request.url.params["f"] == "GeoJSON"
     assert ds["T"].values.tolist() == [5.5]

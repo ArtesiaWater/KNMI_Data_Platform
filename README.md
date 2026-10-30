@@ -38,13 +38,13 @@ Never hardcode a key in a notebook cell. Instead, in order of preference:
 
 ## Usage
 
-### Open Data: download files and open as a dataset
+### Open Data: get files as a dataset (`download_` to disk, `open_` from disk, `get_` either)
 
 ```python
 import knmidata
 
 # one-liner (uses KNMI_OPENDATA_API_KEY or the anonymous key)
-ds = knmidata.open_dataset(
+ds = knmidata.get_dataset(
     "10-minute-in-situ-meteorological-observations",
     "1.0",
     start_time="2024-06-01T00:00:00Z",  # str, pd.Timestamp, datetime, or date
@@ -68,7 +68,7 @@ async with knmidata.AsyncKNMIClient() as client:
         start_time="2024-06-01T00:00:00Z",
         end_time="2024-06-02T00:00:00Z",
     )
-    ds = await client.opendata.open_dataset(
+    ds = await client.opendata.get_dataset(
         "10-minute-in-situ-meteorological-observations",
         "1.0",
         start_time="2024-06-01T00:00:00Z",
@@ -81,6 +81,15 @@ async with knmidata.AsyncKNMIClient() as client:
 ```python
 import knmidata
 
+# one-liner for a station time series (uses KNMI_EDR_API_KEY)
+ts = knmidata.get_timeseries(
+    "daily-in-situ-meteorological-observations",
+    "06260",  # De Bilt
+    start_time="2026-06-01",
+    end_time="2026-06-08",
+    parameters=["RH", "TG", "EV24"],  # or a single variable: parameters="TG"
+)
+
 with knmidata.KNMIClient() as client:
     print(client.edr.collections())  # available collections
     meta = client.edr.collection("daily-in-situ-meteorological-observations")
@@ -90,7 +99,7 @@ with knmidata.KNMIClient() as client:
     # sum, TG = mean temperature, EV24 = Makkink evaporation. Note: for
     # station collections use /locations/{id} — /position with a point can
     # return 404 "no stations".
-    ts = client.edr.location_data(
+    ts = client.edr.get_location(
         "daily-in-situ-meteorological-observations",
         "06260",  # De Bilt; find ids via client.edr.locations(...)
         start_time="2026-06-01",
@@ -108,13 +117,13 @@ with knmidata.KNMIClient() as client:
 import knmidata
 
 with knmidata.KNMIClient() as client:
-    ds = client.opendata.open_dataset(
+    ds = client.opendata.get_dataset(
         "daily-in-situ-meteorological-observations",
         "1.0",
         start_time="2024-01-01T00:00:00Z",
         max_files=10,
     )
-    ts = client.edr.area(
+    ts = client.edr.get_area(
         "Tg1",
         bbox=(3.0, 50.5, 7.5, 53.7),
         start_time="2024-06-01",

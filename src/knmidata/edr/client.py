@@ -49,7 +49,7 @@ def _format_interval(
 def _build_query_params(
     start_time: TimeLike | None = None,
     end_time: TimeLike | None = None,
-    parameters: list[str] | None = None,
+    parameters: str | list[str] | None = None,
     output_format: OutputFormat = "CoverageJSON",
     crs: str | None = None,
 ) -> QueryParams:
@@ -58,6 +58,8 @@ def _build_query_params(
     if dt := _format_interval(start_time, end_time):
         params["datetime"] = dt
     if parameters:
+        if isinstance(parameters, str):
+            parameters = [parameters]
         params["parameter-name"] = ",".join(parameters)
     if crs:
         params["crs"] = crs
@@ -237,16 +239,16 @@ class AsyncEDRClient:
         )
         return best
 
-    async def location_data(
+    async def get_location(
         self,
         collection_id: str,
         location_id: str,
         start_time: TimeLike | None = None,
         end_time: TimeLike | None = None,
-        parameters: list[str] | None = None,
+        parameters: str | list[str] | None = None,
         output_format: OutputFormat = "CoverageJSON",
     ) -> xr.Dataset:
-        """Query data for a single location (weather station).
+        """Get data for a single location (weather station) as an xarray.Dataset.
 
         Uses /collections/{id}/locations/{location_id}. This is the typical way
         to get a time series for a station collection: note that /position with
@@ -261,11 +263,11 @@ class AsyncEDRClient:
             Location identifier (station id, e.g. '06260' for De Bilt; see
             `locations()`).
         start_time : TimeLike | None, default=None
-            Start of the time interval (see `position`).
+            Start of the time interval (see `get_position`).
         end_time : TimeLike | None, default=None
-            End of the time interval (see `position`).
+            End of the time interval (see `get_position`).
         parameters : list[str] | None, default=None
-            List of parameter names to query.
+            Parameter name or list of parameter names to query.
         output_format : OutputFormat, default="CoverageJSON"
             Response format: 'CoverageJSON' or 'GeoJSON'.
 
@@ -300,23 +302,23 @@ class AsyncEDRClient:
             return parse_geojson(payload)
         return parse_coveragejson(payload)
 
-    async def position(
+    async def get_position(
         self,
         collection: str,
         coords: Coords,
         start_time: TimeLike | None = None,
         end_time: TimeLike | None = None,
-        parameters: list[str] | None = None,
+        parameters: str | list[str] | None = None,
         output_format: OutputFormat = "CoverageJSON",
         crs: str | None = None,
     ) -> xr.Dataset:
-        """Query station or point time-series via /collections/{id}/position.
+        """Get station or point time-series via /collections/{id}/position.
 
         Note: /position does server-side nearest-station matching, but only
         within a tolerance — it returns HTTP 404 ("The query returned no
         stations") when no station is close enough to the point. For a reliable
         client-side nearest lookup use `nearest_location()`, then
-        `location_data()` with the returned station id.
+        `get_location()` with the returned station id.
 
         Parameters
         ----------
@@ -334,7 +336,7 @@ class AsyncEDRClient:
             interval '../end' is sent. For a single instant, pass the same value
             as start_time and end_time.
         parameters : list[str] | None, default=None
-            List of parameter names to query (see collection metadata).
+            Parameter name or list of parameter names to query (see collection metadata).
         output_format : str, default="CoverageJSON"
             Response format: 'CoverageJSON' or 'GeoJSON'.
         crs : str | None, default=None
@@ -352,17 +354,17 @@ class AsyncEDRClient:
         }
         return await self._query(endpoint, params, output_format)
 
-    async def area(
+    async def get_area(
         self,
         collection: str,
         bbox: BBox,
         start_time: TimeLike | None = None,
         end_time: TimeLike | None = None,
-        parameters: list[str] | None = None,
+        parameters: str | list[str] | None = None,
         output_format: OutputFormat = "CoverageJSON",
         crs: str | None = None,
     ) -> xr.Dataset:
-        """Query a spatial bounding box via /collections/{id}/area.
+        """Get data over a spatial bounding box via /collections/{id}/area.
 
         Parameters
         ----------
@@ -371,11 +373,11 @@ class AsyncEDRClient:
         bbox : BBox
             Bounding box as (minx, miny, maxx, maxy).
         start_time : TimeLike | None, default=None
-            Start of the queried time interval (see `position`).
+            Start of the queried time interval (see `get_position`).
         end_time : TimeLike | None, default=None
-            End of the queried time interval (see `position`).
+            End of the queried time interval (see `get_position`).
         parameters : list[str] | None, default=None
-            List of parameter names to query.
+            Parameter name or list of parameter names to query.
         output_format : str, default="CoverageJSON"
             Response format: 'CoverageJSON' or 'GeoJSON'.
         crs : str | None, default=None
@@ -398,18 +400,18 @@ class AsyncEDRClient:
         }
         return await self._query(endpoint, params, output_format)
 
-    async def cube(
+    async def get_cube(
         self,
         collection: str,
         bbox: BBox,
         z: ZLevel,
         start_time: TimeLike | None = None,
         end_time: TimeLike | None = None,
-        parameters: list[str] | None = None,
+        parameters: str | list[str] | None = None,
         output_format: OutputFormat = "CoverageJSON",
         crs: str | None = None,
     ) -> xr.Dataset:
-        """Query a 3D volume via /collections/{id}/cube.
+        """Get a 3D volume via /collections/{id}/cube.
 
         Parameters
         ----------
@@ -420,11 +422,11 @@ class AsyncEDRClient:
         z : ZLevel
             Vertical level or interval (e.g. '100' or (100, 500)).
         start_time : TimeLike | None, default=None
-            Start of the queried time interval (see `position`).
+            Start of the queried time interval (see `get_position`).
         end_time : TimeLike | None, default=None
-            End of the queried time interval (see `position`).
+            End of the queried time interval (see `get_position`).
         parameters : list[str] | None, default=None
-            List of parameter names to query.
+            Parameter name or list of parameter names to query.
         output_format : str, default="CoverageJSON"
             Response format: 'CoverageJSON' or 'GeoJSON'.
         crs : str | None, default=None

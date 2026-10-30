@@ -98,6 +98,18 @@ async def test_download_files_aggregates_errors(downloader, netcdf_bytes, tmp_pa
     assert (tmp_path / "ok.nc").exists()
 
 
+async def test_open_dataset_reads_from_disk_without_network(
+    downloader, netcdf_bytes, tmp_path
+):
+    # any HTTP request inside the respx block would raise (no routes mocked)
+    (tmp_path / "f1.nc").write_bytes(netcdf_bytes)
+    with respx.mock:
+        ds = await downloader.open_dataset(tmp_path)  # directory source
+        assert ds["temp"].values.tolist() == [1.0]
+        ds2 = await downloader.open_dataset([tmp_path / "f1.nc"])  # explicit paths
+        assert ds2["temp"].values.tolist() == [1.0]
+
+
 def test_files_to_dataset_combines_by_coords(tmp_path):
     paths = []
     for i, day in enumerate(["2024-01-01", "2024-01-02"]):

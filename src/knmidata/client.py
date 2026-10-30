@@ -3,12 +3,12 @@
 The clients expose one namespace per KNMI API, symmetric for async and sync use::
 
     async with AsyncKNMIClient() as client:
-        ds = await client.opendata.open_dataset("dataset", "1.0", ...)
-        ts = await client.edr.location_data("collection", "06260", ...)
+        ds = await client.opendata.get_dataset("dataset", "1.0", ...)
+        ts = await client.edr.get_location("collection", "06260", ...)
 
     with KNMIClient() as client:  # same, but blocking
-        ds = client.opendata.open_dataset("dataset", "1.0", ...)
-        ts = client.edr.location_data("collection", "06260", ...)
+        ds = client.opendata.get_dataset("dataset", "1.0", ...)
+        ts = client.edr.get_location("collection", "06260", ...)
 """
 
 import asyncio
@@ -27,6 +27,7 @@ from knmidata._http import AsyncTransport
 from knmidata._typing import (
     RunCoroutine,
     T,
+    TimeLike,
 )
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.opendata.client import AsyncOpenDataClient
@@ -40,10 +41,13 @@ class AsyncKNMIClient:
     Attributes
     ----------
     opendata : AsyncOpenDataClient
-        Open Data API namespace: `list_files`, `download_files`, `open_dataset`, ...
+        Open Data API namespace: `list_files`, `download_files`, `open_dataset`
+        (files already on disk), `get_dataset`, ... (authentication resolved
+        lazily on first access).
     edr : AsyncEDRClient
-        EDR API namespace: `collections`, `locations`, `location_data`, `position`,
-        `area`, `cube`, ... (authentication resolved lazily on first access).
+        EDR API namespace: `collections`, `locations`, `get_location`,
+        `get_position`, `get_area`, `get_cube`, ... (authentication resolved
+        lazily on first access).
 
     Parameters
     ----------
@@ -74,12 +78,11 @@ class AsyncKNMIClient:
         self._transport = AsyncTransport(
             max_concurrency=max_concurrency, timeout=timeout, max_retries=max_retries
         )
-        open_data_auth = resolve_open_data_auth(api_key)
-        self._opendata = AsyncOpenDataClient(
-            transport=self._transport, auth=open_data_auth
-        )
-
-        # Lazy-resolve EDR auth so clients using only Open Data don't error if no EDR key is set
+        # Auth for both namespaces is resolved lazily on first access, so an
+        # EDR-only client never triggers the anonymous Open Data key lookup,
+        # and an Open Data-only client doesn't error if no EDR key is set.
+        self._api_key = api_key
+        self._opendata_client: AsyncOpenDataClient | None = None
         self._edr_key = edr_key
         self._edr_client: AsyncEDRClient | None = None
 
@@ -90,8 +93,13 @@ class AsyncKNMIClient:
 
     @property
     def opendata(self) -> AsyncOpenDataClient:
-        """The Open Data API namespace."""
-        return self._opendata
+        """The Open Data API namespace, lazily initializing its authentication."""
+        if self._opendata_client is None:
+            open_data_auth = resolve_open_data_auth(self._api_key)
+            self._opendata_client = AsyncOpenDataClient(
+                transport=self._transport, auth=open_data_auth
+            )
+        return self._opendata_client
 
     @property
     def edr(self) -> AsyncEDRClient:
@@ -101,23 +109,44 @@ class AsyncKNMIClient:
             self._edr_client = AsyncEDRClient(transport=self._transport, auth=edr_auth)
         return self._edr_client
 
-    async def open_dataset(
+    async def get_dataset(
         self, dataset_name: str, dataset_version: str, **kwargs: Any
     ) -> xr.Dataset:
-        """Shortcut for `client.opendata.open_dataset(...)`.
+        """Shortcut for `client.opendata.get_dataset(...)`.
 
-        See `AsyncOpenDataClient.open_dataset` for the full parameter list
+        See `AsyncOpenDataClient.get_dataset` for the full parameter list
         (start_time, end_time, cache_dir, file_pattern, max_files, engine,
         combine, concat_dim, and per-file `xarray.open_dataset` kwargs).
         """
-        return await self._opendata.open_dataset(
-            dataset_name, dataset_version, **kwargs
+        return await self.opendata.get_dataset(dataset_name, dataset_version, **kwargs)
+
+    async def get_timeseries(
+        self,
+        collection_id: str,
+        location_id: str,
+        start_time: TimeLike | None = None,
+        end_time: TimeLike | None = None,
+        parameters: str | list[str] | None = None,
+        **kwargs: Any,
+    ) -> xr.Dataset:
+        """Shortcut for `client.edr.get_location(...)` (single station time series).
+
+        See `AsyncEDRClient.get_location` for the full parameter list
+        (parameters, output_format).
+        """
+        return await self.edr.get_location(
+            collection_id,
+            location_id,
+            start_time=start_time,
+            end_time=end_time,
+            parameters=parameters,
+            **kwargs,
         )
 
     def __repr__(self) -> str:
         """Repr showing the sub-clients (never any API keys)."""
         return (
-            f"{type(self).__name__}(opendata={self._opendata!r}, "
+            f"{type(self).__name__}(opendata={self._opendata_client!r}, "
             f"edr={self._edr_client!r})"
         )
 
@@ -286,16 +315,40 @@ class KNMIClient:
             self._edr_facade = _SyncFacade(self._run, self._async_client.edr)
         return self._edr_facade
 
-    def open_dataset(
+    def get_dataset(
         self, dataset_name: str, dataset_version: str, **kwargs: Any
     ) -> xr.Dataset:
-        """Shortcut for `client.opendata.open_dataset(...)` (synchronous).
+        """Shortcut for `client.opendata.get_dataset(...)` (synchronous).
 
-        See `AsyncOpenDataClient.open_dataset` for the full parameter list.
+        See `AsyncOpenDataClient.get_dataset` for the full parameter list.
         """
         return self._run(
-            self._async_client.opendata.open_dataset(
+            self._async_client.opendata.get_dataset(
                 dataset_name, dataset_version, **kwargs
+            )
+        )
+
+    def get_timeseries(
+        self,
+        collection_id: str,
+        location_id: str,
+        start_time: TimeLike | None = None,
+        end_time: TimeLike | None = None,
+        parameters: str | list[str] | None = None,
+        **kwargs: Any,
+    ) -> xr.Dataset:
+        """Shortcut for `client.edr.get_location(...)` (synchronous).
+
+        See `AsyncEDRClient.get_location` for the full parameter list.
+        """
+        return self._run(
+            self._async_client.edr.get_location(
+                collection_id,
+                location_id,
+                start_time=start_time,
+                end_time=end_time,
+                parameters=parameters,
+                **kwargs,
             )
         )
 
@@ -326,13 +379,15 @@ class KNMIClient:
         self.close()
 
 
-def open_dataset(
+def get_dataset(
     dataset_name: str,
     dataset_version: str,
     api_key: str | None = None,
     **kwargs: Any,
 ) -> xr.Dataset:
-    """One-line convenience function to synchronously download and open Open Data files.
+    """One-line convenience function to get an Open Data dataset as an xarray.Dataset.
+
+    Downloads matching files (reusing `cache_dir` if given) and opens them.
 
     Parameters
     ----------
@@ -344,7 +399,7 @@ def open_dataset(
         Optional KNMI Open Data API key. Falls back to environment variables and
         the public anonymous key if omitted.
     **kwargs : Any
-        Forwarded to `AsyncOpenDataClient.open_dataset`: start_time, end_time,
+        Forwarded to `AsyncOpenDataClient.get_dataset`: start_time, end_time,
         cache_dir, file_pattern, max_files, engine, combine, concat_dim, and
         per-file `xarray.open_dataset` keyword arguments.
 
@@ -354,4 +409,52 @@ def open_dataset(
         Multidimensional dataset.
     """
     with KNMIClient(api_key=api_key) as client:
-        return client.opendata.open_dataset(dataset_name, dataset_version, **kwargs)
+        return client.opendata.get_dataset(dataset_name, dataset_version, **kwargs)
+
+
+def get_timeseries(
+    collection_id: str,
+    location_id: str,
+    start_time: TimeLike | None = None,
+    end_time: TimeLike | None = None,
+    parameters: str | list[str] | None = None,
+    edr_key: str | None = None,
+    **kwargs: Any,
+) -> xr.Dataset:
+    """One-line convenience function to get a station time series via the EDR API.
+
+    Parameters
+    ----------
+    collection_id : str
+        EDR collection ID (e.g. 'daily-in-situ-meteorological-observations').
+    location_id : str
+        Station/location ID (e.g. '06260' for De Bilt; find ids via
+        `AsyncEDRClient.locations`).
+    start_time : TimeLike | None, default=None
+        Start of the time interval (ISO-8601 string, pandas Timestamp, datetime,
+        or date; naive values are assumed UTC).
+    end_time : TimeLike | None, default=None
+        End of the time interval (TimeLike, see start_time).
+    parameters : str | list[str] | None, default=None
+        Variable(s) to get, e.g. 'TG' or ['RH', 'TG', 'EV24'].
+    edr_key : str | None, default=None
+        Optional KNMI EDR API key. Falls back to the KNMI_EDR_API_KEY
+        environment variable (or KNMI_EDR_API_KEY_FILE). Note KNMI issues a
+        separate key per API: the Open Data key does not work for EDR.
+    **kwargs : Any
+        Forwarded to `AsyncEDRClient.get_location` (e.g. output_format).
+
+    Returns
+    -------
+    xr.Dataset
+        In-memory dataset with a time dimension.
+    """
+    with KNMIClient(edr_key=edr_key) as client:
+        return client.get_timeseries(
+            collection_id,
+            location_id,
+            start_time=start_time,
+            end_time=end_time,
+            parameters=parameters,
+            **kwargs,
+        )

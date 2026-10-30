@@ -200,7 +200,7 @@ except knmidata.KNMIAuthError as exc:
 #    *filename strings* instead of timestamps).
 # 3. `GET .../files/{filename}/url` returns a short-lived **presigned S3 URL**.
 # 4. The file is streamed to disk (atomic `.part` → rename, size-checked), and
-#    `open_dataset` assembles the files into one `xarray.Dataset`
+#    `get_dataset` assembles the files into one `xarray.Dataset`
 #    (`combine_by_coords` over the time dimension).
 
 # %%
@@ -223,7 +223,7 @@ print(f"{len(files)} files between {START} and {END}: {files}")
 # sent — passing `pd.Timestamp` objects is fine.
 
 # %%
-ds = client.opendata.open_dataset(
+ds = client.opendata.get_dataset(
     DATASET_NAME,
     DATASET_VERSION,
     start_time=START,
@@ -256,9 +256,9 @@ print("\nVariables in the dataset:", list(ds.data_vars))
 #
 # | Method | Call | When to use |
 # |---|---|---|
-# | by station id | `client.edr.location_data(COLLECTION, location_id, ...)` | you know the station id (WSI) |
-# | nearest to a point | `client.edr.nearest_location(COLLECTION, coords)` → id, then `location_data`; or `client.edr.position(..., coords=...)` (server-side, tolerance-limited) | you have coordinates |
-# | area / bbox | `client.edr.area(COLLECTION, bbox=...)` | you want all stations in a region |
+# | by station id | `client.edr.get_location(COLLECTION, location_id, ...)` | you know the station id (WSI) |
+# | nearest to a point | `client.edr.nearest_location(COLLECTION, coords)` → id, then `get_location`; or `client.edr.get_position(..., coords=...)` (server-side, tolerance-limited) | you have coordinates |
+# | area / bbox | `client.edr.get_area(COLLECTION, bbox=...)` | you want all stations in a region |
 
 # %%
 
@@ -287,7 +287,7 @@ print(f"Requested {PARAMETERS}; missing from collection: {missing or 'none'}")
 
 
 # %% [markdown]
-# ### Method 1: by station id — `location_data`
+# ### Method 1: by station id — `get_location`
 #
 # `/collections/{id}/locations/{location_id}` with `start_time`/`end_time` and
 # `parameter-name` returns one station's time series (a CoverageCollection with
@@ -296,7 +296,7 @@ print(f"Requested {PARAMETERS}; missing from collection: {missing or 'none'}")
 
 # %%
 de_bilt_id = "06260"  # fallback: WMO id of De Bilt
-ts = client.edr.location_data(
+ts = client.edr.get_location(
     COLLECTION,
     de_bilt_id,
     start_time=START,
@@ -366,7 +366,7 @@ print(
     f"{nearest['distance_km']:.2f} km)"
 )
 
-ts_position = client.edr.position(
+ts_position = client.edr.get_position(
     COLLECTION,
     coords=STATION_COORDS,
     start_time=START,
@@ -386,7 +386,7 @@ print(ts_position)
 
 # %%
 
-area = client.edr.area(
+area = client.edr.get_area(
     COLLECTION,
     bbox=NL_BBOX,
     start_time=START,

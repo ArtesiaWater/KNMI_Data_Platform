@@ -39,6 +39,7 @@ def test_subclients_exposed_at_namespace():
         "get_download_url",
         "stream_file",
         "download_files",
+        "get_dataset",
         "open_dataset",
     ):
         assert hasattr(opendata, method)

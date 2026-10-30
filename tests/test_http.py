@@ -150,15 +150,15 @@ async def test_stream_error_strips_presigned_signature(transport):
     assert "topsecret" not in str(exc_info.value)
 
 
-def test_knmidata_logger_nullhandler_and_debug_level():
-    # library pattern: only a NullHandler, but our own (sanitized) log lines
-    # default to DEBUG so basicConfig(level=DEBUG) is enough to see them
+def test_knmidata_logger_nullhandler_only():
+    # standard library pattern: only a NullHandler, level left to the
+    # application (basicConfig(level=DEBUG) is enough to see our log lines)
     import logging
 
     import knmidata  # noqa: F401
 
     logger = logging.getLogger("knmidata")
-    assert logger.level == logging.DEBUG
+    assert logger.level == logging.NOTSET
     assert any(isinstance(h, logging.NullHandler) for h in logger.handlers)
 
 

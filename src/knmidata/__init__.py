@@ -28,7 +28,7 @@ from knmidata._typing import (
     ZLevel,
 )
 from knmidata._version import __version__, show_versions
-from knmidata.client import AsyncKNMIClient, KNMIClient, open_dataset
+from knmidata.client import AsyncKNMIClient, KNMIClient, get_dataset, get_timeseries
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.edr.parsers import parse_coverage, parse_coveragejson, parse_geojson
 from knmidata.opendata.client import AsyncOpenDataClient
@@ -59,7 +59,8 @@ __all__ = [
     "ZLevel",
     "__version__",
     "files_to_dataset",
-    "open_dataset",
+    "get_dataset",
+    "get_timeseries",
     "parse_coverage",
     "parse_coveragejson",
     "parse_geojson",

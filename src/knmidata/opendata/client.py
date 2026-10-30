@@ -16,7 +16,7 @@ import xarray as xr
 from knmidata._exceptions import KNMIError, NoFilesFoundError
 from knmidata._http import AsyncTransport
 from knmidata._time import to_iso8601
-from knmidata._typing import CombineMethod, PathLike, QueryParams, TimeLike
+from knmidata._typing import CombineMethod, FilePaths, PathLike, QueryParams, TimeLike
 from knmidata.config import OPENDATA_BASE_URL
 from knmidata.opendata.parsers import files_to_dataset
 
@@ -29,10 +29,10 @@ class AsyncOpenDataClient:
 
     Covers the whole Open Data workflow: `list_files` (catalog with cursor
     pagination and time filtering), `get_download_url` (presigned S3 URL per
-    file), `stream_file`/`download_files` (atomic concurrent downloads), and
-    `open_dataset` (list + download + assemble into an `xarray.Dataset` in one
-    call). Access it via `client.opendata`, or instantiate directly with your
-    own transport/auth.
+    file), `stream_file`/`download_files` (atomic concurrent downloads to disk),
+    `open_dataset` (open files already on disk into an `xarray.Dataset`), and
+    `get_dataset` (list + download-if-missing + open in one call). Access it
+    via `client.opendata`, or instantiate directly with your own transport/auth.
 
     Parameters
     ----------
@@ -348,6 +348,48 @@ class AsyncOpenDataClient:
 
     async def open_dataset(
         self,
+        source: PathLike | FilePaths,
+        engine: str = "h5netcdf",
+        combine: CombineMethod = "by_coords",
+        concat_dim: str | None = None,
+        **open_dataset_kwargs: Any,
+    ) -> xr.Dataset:
+        """Open already-downloaded files from disk into an xarray.Dataset (no network).
+
+        Parameters
+        ----------
+        source : PathLike | FilePaths
+            A directory (all files in it, sorted by name — e.g. a `cache_dir`
+            previously filled by `get_dataset`) or an explicit list of file paths.
+        engine : str, default="h5netcdf"
+            Xarray backend engine used to open each file (see `files_to_dataset`).
+        combine : CombineMethod, default="by_coords"
+            How to combine the per-file datasets (see `files_to_dataset`).
+        concat_dim : str | None, default=None
+            Dimension to concatenate along when combine='nested'.
+        **open_dataset_kwargs : Any
+            Additional keyword arguments passed to `xarray.open_dataset` per file.
+
+        Returns
+        -------
+        xr.Dataset
+            Combined multidimensional dataset, opened lazily from disk.
+        """
+        if isinstance(source, str | Path):
+            paths = sorted(p for p in Path(source).iterdir() if p.is_file())
+        else:
+            paths = list(source)
+        return await asyncio.to_thread(
+            files_to_dataset,
+            paths,
+            engine=engine,
+            combine=combine,
+            concat_dim=concat_dim,
+            **open_dataset_kwargs,
+        )
+
+    async def get_dataset(
+        self,
         dataset_name: str,
         dataset_version: str,
         start_time: TimeLike | None = None,
@@ -360,7 +402,12 @@ class AsyncOpenDataClient:
         concat_dim: str | None = None,
         **open_dataset_kwargs: Any,
     ) -> xr.Dataset:
-        """Download matching archive files via Open Data and assemble an xarray.Dataset.
+        """Get matching archive files via Open Data and assemble an xarray.Dataset.
+
+        If `cache_dir` is given, files already on disk (matching the catalog size)
+        are reused instead of re-downloaded, and the dataset is opened lazily from
+        disk via `open_dataset`. If `cache_dir` is None, files are downloaded to a
+        temporary directory, loaded into memory, and removed again.
 
         Parameters
         ----------
@@ -374,9 +421,8 @@ class AsyncOpenDataClient:
         end_time : TimeLike | None, default=None
             End timestamp (TimeLike, see start_time).
         cache_dir : PathLike | None, default=None
-            Local folder where downloaded NetCDF/HDF5 files are preserved and the
-            dataset is opened lazily. If None, files are downloaded to a temporary
-            directory, loaded into memory, and removed again.
+            Local folder to cache downloaded NetCDF/HDF5 files in. If None, files
+            are downloaded to a temporary directory and loaded into memory.
         file_pattern : str | None, default=None
             Optional regular expression to keep only matching file names.
         max_files : int | None, default=None
@@ -409,7 +455,7 @@ class AsyncOpenDataClient:
             max_files=max_files,
         )
         logger.info(
-            "open_dataset: dataset '%s' v%s -> %d files (cache_dir=%s)",
+            "get_dataset: dataset '%s' v%s -> %d files (cache_dir=%s)",
             dataset_name,
             dataset_version,
             len(files),
@@ -425,6 +471,7 @@ class AsyncOpenDataClient:
             "engine": engine,
             "combine": combine,
             "concat_dim": concat_dim,
+            **open_dataset_kwargs,
         }
         if cache_dir is None:
             with tempfile.TemporaryDirectory(prefix="knmi_") as tmp:
@@ -434,9 +481,7 @@ class AsyncOpenDataClient:
                     filenames=files,
                     destination_dir=tmp,
                 )
-                dataset = files_to_dataset(
-                    paths, **combine_kwargs, **open_dataset_kwargs
-                )
+                dataset = await self.open_dataset(paths, **combine_kwargs)
                 dataset.load()
                 dataset.close()
                 return dataset
@@ -447,4 +492,4 @@ class AsyncOpenDataClient:
             filenames=files,
             destination_dir=cache_dir,
         )
-        return files_to_dataset(paths, **combine_kwargs, **open_dataset_kwargs)
+        return await self.open_dataset(paths, **combine_kwargs)
