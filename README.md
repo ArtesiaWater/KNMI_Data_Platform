@@ -2,6 +2,11 @@
 
 `knmidata` is a lightweight Python client for the [KNMI Data Platform](https://dataplatform.knmi.nl/) that fetches observational and gridded meteorological data directly into standard `xarray.Dataset` objects.
 
+Two APIs are supported:
+
+- **Open Data API** — bulk NetCDF file archives (e.g. radar composites, in-situ observations), downloaded and assembled into one `xarray.Dataset`.
+- **EDR API** — OGC EDR spatio-temporal queries (`/collections`, `/locations`, `/position`, `/area`, `/cube`); CoverageJSON/GeoJSON responses are parsed into in-memory `xarray.Dataset` objects.
+
 ## Install
 
 ```bash
@@ -10,128 +15,93 @@ pip install knmidata
 
 ## Authentication
 
-All API endpoints require an API key in the `Authorization` header. Request a free registered key at [developer.dataplatform.knmi.nl](https://developer.dataplatform.knmi.nl/), then either pass it explicitly or set an environment variable:
-
-KNMI issues a **separate key per API** — an Open Data key does not work for the EDR API and vice versa, so there is no single general key:
+All endpoints require an API key. Request a free key at [developer.dataplatform.knmi.nl](https://developer.dataplatform.knmi.nl/). KNMI issues a **separate key per API** — an Open Data key does not work for EDR and vice versa:
 
 ```bash
-export KNMI_OPENDATA_API_KEY="<your open data key>"   # Open Data API
-export KNMI_EDR_API_KEY="<your edr key>"               # EDR API (no anonymous key exists)
+export KNMI_OPENDATA_API_KEY="<your open data key>"
+export KNMI_EDR_API_KEY="<your edr key>"   # EDR has no anonymous key
 ```
 
-For the Open Data API only, you can omit the key entirely and the public anonymous key (published on the docs page) is used automatically, subject to a shared rate limit.
-
-### Keeping keys out of shared notebooks/scripts
-
-Never hardcode a key in a notebook cell. Instead, in order of preference:
-
-1. a gitignored `.env` file loaded with `python-dotenv` (`pip install knmidata[dotenv]`): `from dotenv import load_dotenv; load_dotenv()`;
-2. shell environment variables (`export KNMI_OPENDATA_API_KEY=...` / `export KNMI_EDR_API_KEY=...`);
-3. a key file: `KNMI_OPENDATA_API_KEY_FILE=/path/to/key.txt` or `KNMI_EDR_API_KEY_FILE=...` (chmod 600) — `knmidata` reads the file for you.
-
-`knmidata` never prints or logs the key, and strip notebook outputs before sharing (pre-commit runs `nbstripout`).
-
-## Supported APIs
-
-- **Open Data API** (`https://api.dataplatform.knmi.nl/open-data/v1`): bulk file archives (e.g. radar precipitation composites, in-situ observations). Handles cursor-based file pagination (with optional ISO-8601 time filtering), AWS S3 presigned URL retrieval, concurrent streaming downloads with atomic writes, and assembly into `xarray.Dataset` via `xr.open_mfdataset`. Only NetCDF/HDF5 files are supported (GRIB files, e.g. HARMONIE model output, are not).
-- **EDR API** (`https://api.dataplatform.knmi.nl/edr/v1`): OGC Environmental Data Retrieval for spatio-temporal queries — `/collections`, `/locations`, `/instances`, `/position`, `/area`, `/cube`. Responses in CoverageJSON or GeoJSON are parsed into in-memory `xarray.Dataset` objects.
+For Open Data only, you can omit the key entirely and the public anonymous key is used automatically (shared rate limit). To keep keys out of notebooks/scripts, use a gitignored `.env` file (`pip install knmidata[dotenv]`, then `from dotenv import load_dotenv; load_dotenv()`), a key file (`KNMI_OPENDATA_API_KEY_FILE=/path/to/key.txt`, chmod 600 — `knmidata` reads it for you), or pass `api_key=`/`edr_key=` explicitly. `knmidata` never prints or logs keys.
 
 ## Usage
 
-### Open Data: get files as a dataset (`download_` to disk, `open_` from disk, `get_` either)
+Time arguments accept `str`, `pandas.Timestamp`, `datetime`, or `date` (exported as `knmidata.TimeLike`); naive values are assumed UTC and normalized to ISO-8601 UTC.
+
+### Synchronous client
+
+`KNMIClient` runs requests on a background event loop, so it works in plain scripts and in environments that already run a loop (e.g. Jupyter):
 
 ```python
 import knmidata
 
-# one-liner (uses KNMI_OPENDATA_API_KEY or the anonymous key)
+with knmidata.KNMIClient() as client:
+    # Open Data: get files as one dataset (cached on disk if cache_dir is given)
+    ds = client.opendata.get_dataset(
+        "daily-in-situ-meteorological-observations",
+        "1.0",
+        start_time="2024-01-01",
+        end_time="2024-01-31",
+        cache_dir="./data",  # omit to keep the dataset in memory only
+        max_files=10,
+    )
+
+    # EDR: time series for one station (De Bilt, WSI 06260)
+    ts = client.edr.get_location(
+        "daily-in-situ-meteorological-observations",
+        "06260",
+        start_time="2026-06-01",
+        end_time="2026-06-08",
+        parameters=["RH", "TG", "EV24"],  # or a single variable: "TG"
+    )
+    ts["TG"].plot()  # needs matplotlib
+```
+
+### One-liners
+
+The same without keeping a client around:
+
+```python
+import knmidata
+
 ds = knmidata.get_dataset(
     "10-minute-in-situ-meteorological-observations",
     "1.0",
-    start_time="2024-06-01T00:00:00Z",  # str, pd.Timestamp, datetime, or date
-    end_time=pd.Timestamp("2024-06-02"),  # naive values are assumed UTC
-    file_pattern=r"KMDS__OPER_P___10M_OBS_L2_2024060[12].*\.nc",
-    cache_dir="./data",  # keep downloaded files here; omit to load into memory only
+    start_time="2024-06-01",
+    end_time="2024-06-02",
+    cache_dir="./data",
+)
+
+ts = knmidata.get_timeseries(
+    "daily-in-situ-meteorological-observations",
+    "06260",
+    start_time="2026-06-01",
+    end_time="2026-06-08",
+    parameters="TG",
 )
 ```
 
-Time arguments accept `str`, `pandas.Timestamp`, `datetime`, or `date` (exported as `knmidata.TimeLike`) and are normalized to UTC ISO-8601 before being sent to the API.
+### Asynchronous client
 
-### Async client
+The same API is available asynchronously:
 
 ```python
 import knmidata
 
 async with knmidata.AsyncKNMIClient() as client:
-    files = await client.opendata.list_files(
-        "10-minute-in-situ-meteorological-observations",
-        "1.0",
-        start_time="2024-06-01T00:00:00Z",
-        end_time="2024-06-02T00:00:00Z",
-    )
     ds = await client.opendata.get_dataset(
-        "10-minute-in-situ-meteorological-observations",
-        "1.0",
-        start_time="2024-06-01T00:00:00Z",
-        end_time="2024-06-02T00:00:00Z",
+        "daily-in-situ-meteorological-observations", "1.0", ...
+    )
+    ts = await client.edr.get_location(
+        "daily-in-situ-meteorological-observations", "06260", ...
     )
 ```
 
-### EDR: spatio-temporal queries
+### Lower-level methods
 
-```python
-import knmidata
+`client.opendata` also exposes `list_files`, `get_download_url`, `download_files` (API → disk), `open_dataset` (disk → `xr.Dataset`), and `get_dataset` (either). `client.edr` exposes metadata (`collections`, `collection`, `instances`, `locations`) and the queries `get_location`, `get_position`, `get_area`, `get_cube`, plus `nearest_location` to find a station by coordinates.
 
-# one-liner for a station time series (uses KNMI_EDR_API_KEY)
-ts = knmidata.get_timeseries(
-    "daily-in-situ-meteorological-observations",
-    "06260",  # De Bilt
-    start_time="2026-06-01",
-    end_time="2026-06-08",
-    parameters=["RH", "TG", "EV24"],  # or a single variable: parameters="TG"
-)
-
-with knmidata.KNMIClient() as client:
-    print(client.edr.collections())  # available collections
-    meta = client.edr.collection("daily-in-situ-meteorological-observations")
-    print(client.edr.locations("daily-in-situ-meteorological-observations"))
-
-    # daily time series at De Bilt (station WSI 06260): RH = precipitation
-    # sum, TG = mean temperature, EV24 = Makkink evaporation. Note: for
-    # station collections use /locations/{id} — /position with a point can
-    # return 404 "no stations".
-    ts = client.edr.get_location(
-        "daily-in-situ-meteorological-observations",
-        "06260",  # De Bilt; find ids via client.edr.locations(...)
-        start_time="2026-06-01",
-        end_time="2026-06-08",
-        parameters=["RH", "TG", "EV24"],
-    )
-    ts["TG"].plot()  # needs matplotlib
-```
-
-### Sync client
-
-`KNMIClient` runs all requests on a dedicated background event loop, so it can be called repeatedly and from environments that already run an event loop (e.g. Jupyter notebooks):
-
-```python
-import knmidata
-
-with knmidata.KNMIClient() as client:
-    ds = client.opendata.get_dataset(
-        "daily-in-situ-meteorological-observations",
-        "1.0",
-        start_time="2024-01-01T00:00:00Z",
-        max_files=10,
-    )
-    ts = client.edr.get_area(
-        "Tg1",
-        bbox=(3.0, 50.5, 7.5, 53.7),
-        start_time="2024-06-01",
-        end_time="2024-06-30",
-        parameters=["TG"],
-    )
-```
-
+See [docs/example_daily_in_situ_observations.py](docs/example_daily_in_situ_observations.py) for a full walkthrough comparing both APIs.
 
 ## Development
 
@@ -141,5 +111,3 @@ uv run pytest            # tests with coverage
 uv run ruff check        # lint
 uv run ty check src      # type check
 ```
-
-CI also executes the `docs/example_*.py` notebooks (via jupytext/nbclient) with API keys taken from repository secrets — see `.github/workflows/notebooks.yaml`. Add secrets named `KNMI_OPENDATA_API_KEY` / `KNMI_EDR_API_KEY` under Settings > Secrets and variables > Actions.
