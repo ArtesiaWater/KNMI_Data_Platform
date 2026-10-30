@@ -10,7 +10,7 @@ from knmidata._auth import APIKeyAuth
 from knmidata._exceptions import KNMIError
 from knmidata.config import OPENDATA_BASE_URL as OPENDATA
 from knmidata.opendata.client import AsyncOpenDataClient
-from knmidata.opendata.download import files_to_dataset
+from knmidata.opendata.parsers import files_to_dataset
 
 S3 = "https://fake-s3.amazonaws.com"
 
@@ -29,16 +29,13 @@ def _url_payload(filename, size):
     }
 
 
-async def test_get_download_info(downloader):
+async def test_get_download_url(downloader):
     url = f"{OPENDATA}/datasets/ds/versions/1.0/files/f1.nc/url"
     with respx.mock(assert_all_called=False) as router:
         router.get(url).mock(
             return_value=httpx.Response(200, json=_url_payload("f1.nc", 123))
         )
-        info = await downloader.get_download_info("ds", "1.0", "f1.nc")
-        assert info.url == f"{S3}/f1.nc"
-        assert info.size == 123
-        assert info.content_type == "application/x-netcdf"
+        assert await downloader.get_download_url("ds", "1.0", "f1.nc") == f"{S3}/f1.nc"
 
 
 async def test_download_files_streams_and_skips_existing(

@@ -3,10 +3,8 @@
 import knmidata
 from knmidata._auth import APIKeyAuth, NoAuth
 from knmidata._http import AsyncTransport
-from knmidata.opendata.download import FileDownloadInfo
 
 SECRET_KEY = "eyJ" + "s3cr3t" * 20
-PRESIGNED = "https://fake-s3.amazonaws.com/f.nc?X-Amz-Signature=abc123"
 
 
 def test_api_key_auth_repr_masks_key():
@@ -19,19 +17,6 @@ def test_api_key_auth_repr_masks_key():
 
 def test_no_auth_repr():
     assert "NoAuth" in repr(NoAuth())
-
-
-def test_file_download_info_repr_masks_url():
-    info = FileDownloadInfo(
-        content_type="application/x-netcdf",
-        size=10,
-        last_modified="2026-06-01",
-        url=PRESIGNED,
-    )
-    r = repr(info)
-    assert "FileDownloadInfo" in r
-    assert "size=10" in r
-    assert PRESIGNED not in r
 
 
 def test_transport_repr():

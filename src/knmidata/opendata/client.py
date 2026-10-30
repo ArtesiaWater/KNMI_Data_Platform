@@ -17,7 +17,7 @@ from knmidata._http import AsyncTransport
 from knmidata._time import to_iso8601
 from knmidata._typing import PathLike, QueryParams, TimeLike
 from knmidata.config import OPENDATA_BASE_URL
-from knmidata.opendata.download import FileDownloadInfo, files_to_dataset
+from knmidata.opendata.parsers import files_to_dataset
 
 
 @dataclass(slots=True, kw_only=True)
@@ -25,7 +25,7 @@ class AsyncOpenDataClient:
     """Client for the KNMI Open Data API (file-based bulk downloads).
 
     Covers the whole Open Data workflow: `list_files` (catalog with cursor
-    pagination and time filtering), `get_download_info` (presigned S3 URL per
+    pagination and time filtering), `get_download_url` (presigned S3 URL per
     file), `stream_file`/`download_files` (atomic concurrent downloads), and
     `open_dataset` (list + download + assemble into an `xarray.Dataset` in one
     call). Access it via `client.opendata`, or instantiate directly with your
@@ -147,10 +147,20 @@ class AsyncOpenDataClient:
 
         return list(dict.fromkeys(filenames))
 
-    async def get_download_info(
+    async def _get_file_payload(
         self, dataset_name: str, dataset_version: str, filename: str
-    ) -> FileDownloadInfo:
-        """Retrieve metadata and a temporary S3 presigned URL for a file.
+    ) -> dict[str, Any]:
+        """Fetch the raw FileDownload response (metadata + presigned URL) for a file."""
+        endpoint = (
+            f"{OPENDATA_BASE_URL}/datasets/{dataset_name}/"
+            f"versions/{dataset_version}/files/{filename}/url"
+        )
+        return await self.transport.get_json(endpoint, auth=self.auth)
+
+    async def get_download_url(
+        self, dataset_name: str, dataset_version: str, filename: str
+    ) -> str:
+        """Retrieve a temporary S3 presigned download URL for a file.
 
         Parameters
         ----------
@@ -163,20 +173,11 @@ class AsyncOpenDataClient:
 
         Returns
         -------
-        FileDownloadInfo
-            File metadata including the presigned download URL.
+        str
+            Temporary presigned download URL.
         """
-        endpoint = (
-            f"{OPENDATA_BASE_URL}/datasets/{dataset_name}/"
-            f"versions/{dataset_version}/files/{filename}/url"
-        )
-        payload = await self.transport.get_json(endpoint, auth=self.auth)
-        return FileDownloadInfo(
-            content_type=str(payload["contentType"]),
-            size=int(payload["size"]),
-            last_modified=str(payload["lastModified"]),
-            url=str(payload["temporaryDownloadUrl"]),
-        )
+        payload = await self._get_file_payload(dataset_name, dataset_version, filename)
+        return str(payload["temporaryDownloadUrl"])
 
     async def stream_file(
         self, url: str, target_path: Path, expected_size: int | None = None
@@ -261,8 +262,12 @@ class AsyncOpenDataClient:
         dest.mkdir(parents=True, exist_ok=True)
 
         async def _fetch_and_stream(fname: str) -> Path:
-            info = await self.get_download_info(dataset_name, dataset_version, fname)
-            return await self.stream_file(info.url, dest / Path(fname).name, info.size)
+            payload = await self._get_file_payload(dataset_name, dataset_version, fname)
+            return await self.stream_file(
+                str(payload["temporaryDownloadUrl"]),
+                dest / Path(fname).name,
+                int(payload["size"]),
+            )
 
         tasks = [_fetch_and_stream(fname) for fname in filenames]
         results = await asyncio.gather(*tasks, return_exceptions=True)

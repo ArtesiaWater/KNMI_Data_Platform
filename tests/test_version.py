@@ -36,7 +36,7 @@ def test_subclients_exposed_at_namespace():
     # all Open Data methods live directly on AsyncOpenDataClient now
     for method in (
         "list_files",
-        "get_download_info",
+        "get_download_url",
         "stream_file",
         "download_files",
         "open_dataset",

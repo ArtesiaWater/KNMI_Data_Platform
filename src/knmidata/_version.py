@@ -1,20 +1,9 @@
 """Version information for knmidata."""
 
-from importlib.metadata import PackageNotFoundError, version
+from importlib.metadata import version
 from platform import python_version
 
-try:
-    __version__ = version("knmidata")
-except PackageNotFoundError:  # running from a source checkout without installation
-    __version__ = "0.0.1"
-
-
-def _dist_version(dist: str) -> str:
-    """Return the installed version of a distribution, or a placeholder."""
-    try:
-        return version(dist)
-    except PackageNotFoundError:
-        return "not installed"
+__version__ = version("knmidata")
 
 
 def get_versions() -> dict[str, str]:
@@ -22,9 +11,9 @@ def get_versions() -> dict[str, str]:
     return {
         "python": python_version(),
         "knmidata": __version__,
-        "httpx": _dist_version("httpx"),
-        "xarray": _dist_version("xarray"),
-        "h5netcdf": _dist_version("h5netcdf"),
+        "httpx": version("httpx"),
+        "xarray": version("xarray"),
+        "h5netcdf": version("h5netcdf"),
     }
 
 

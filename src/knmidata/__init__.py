@@ -25,7 +25,7 @@ from knmidata.client import AsyncKNMIClient, KNMIClient, open_dataset
 from knmidata.edr.client import AsyncEDRClient
 from knmidata.edr.parsers import parse_coveragejson, parse_geojson
 from knmidata.opendata.client import AsyncOpenDataClient
-from knmidata.opendata.download import FileDownloadInfo, files_to_dataset
+from knmidata.opendata.parsers import files_to_dataset
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
@@ -38,7 +38,6 @@ __all__ = [
     "BBox",
     "CombineMethod",
     "Coords",
-    "FileDownloadInfo",
     "FilePaths",
     "KNMIAuthError",
     "KNMIClient",

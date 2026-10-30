@@ -1,41 +1,11 @@
-"""Helpers for Open Data files: download metadata and xarray dataset assembly."""
+"""Parsers/helpers converting Open Data files into xarray.Dataset instances."""
 
-from dataclasses import dataclass
 from typing import Any, cast
 
 import xarray as xr
 
 from knmidata._exceptions import KNMIError
 from knmidata._typing import CombineMethod, FilePaths
-
-
-@dataclass(slots=True, kw_only=True)
-class FileDownloadInfo:
-    """Metadata and presigned URL for a single dataset file.
-
-    Parameters
-    ----------
-    content_type : str
-        MIME type of the file.
-    size : int
-        File size in bytes, as reported by the API.
-    last_modified : str
-        ISO-8601 timestamp of the last modification.
-    url : str
-        Temporary presigned download URL.
-    """
-
-    content_type: str
-    size: int
-    last_modified: str
-    url: str
-
-    def __repr__(self) -> str:
-        """Repr that masks the presigned URL (it is a temporary credential)."""
-        return (
-            f"{type(self).__name__}(content_type={self.content_type!r}, "
-            f"size={self.size}, last_modified={self.last_modified!r}, url='***')"
-        )
 
 
 def files_to_dataset(

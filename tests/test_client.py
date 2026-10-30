@@ -147,8 +147,9 @@ def test_sync_catalog_and_downloader_facades(netcdf_bytes, tmp_path):
         with knmidata.KNMIClient(api_key="key") as client:
             files = client.opendata.list_files("ds", "1.0")
             assert files == ["f1.nc"]
-            info = client.opendata.get_download_info("ds", "1.0", "f1.nc")
-            assert info.url == f"{S3}/f1.nc"
+            assert (
+                client.opendata.get_download_url("ds", "1.0", "f1.nc") == f"{S3}/f1.nc"
+            )
             paths = client.opendata.download_files(
                 "ds", "1.0", files, destination_dir=tmp_path / "out"
             )
