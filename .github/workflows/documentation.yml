@@ -12,20 +12,8 @@ name: Build and Deploy Docs
 on:
   push:
     branches: ["main"]
-    paths:
-      - "docs/**"
-      - "src/**"
-      - "pyproject.toml"
-      - "uv.lock"
-      - ".github/workflows/documentation.yml"
   pull_request:
     branches: ["main"]
-    paths:
-      - "docs/**"
-      - "src/**"
-      - "pyproject.toml"
-      - "uv.lock"
-      - ".github/workflows/documentation.yml"
   workflow_dispatch:
 
 permissions:
@@ -50,10 +38,9 @@ jobs:
           python-version: "3.13"
           enable-cache: true
 
-      - name: Install package and notebook tooling
+      - name: Install tox
         run: |
           uv venv
-          uv pip install -e ".[notebooks]" python-dotenv
           uv pip install tox-uv
 
       - name: Execute example notebooks
@@ -61,11 +48,8 @@ jobs:
           KNMI_OPENDATA_API_KEY: ${{ secrets.KNMI_OPENDATA_API_KEY }}
           KNMI_EDR_API_KEY: ${{ secrets.KNMI_EDR_API_KEY }}
         run: |
-          for f in docs/example_*.ipynb; do
-            echo "::group::Executing $f"
-            jupyter nbconvert --to notebook --execute --inplace "$f"
-            echo "::endgroup::"
-          done
+          uv run tox -e notebooks --notest
+          uv run tox -e notebooks --skip-pkg-install
 
       - name: Upload executed notebooks
         if: always()

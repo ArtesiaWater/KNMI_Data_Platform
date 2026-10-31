@@ -38,16 +38,12 @@ dependencies = [
 [project.optional-dependencies]
 testing = ["pytest", "pytest-asyncio", "pytest-cov", "respx", "ruff", "ty"]
 notebooks = [
-    "nbconvert>=7",
-    "nbclient>=0.10",
+    "papermill>=2.6",
     "ipykernel>=6.29",
     "matplotlib>=3.8",
+    "python-dotenv>=1.0.0",
 ]
-documentation = [
-    "sphinx>=8.2",
-    "myst-parser",
-    "nbsphinx",
-]
+documentation = ["sphinx>=8.2", "myst-parser", "nbsphinx"]
 dev = [
     "knmidata[testing,notebooks,documentation]",
     "python-dotenv>=1.0.0",
@@ -100,3 +96,9 @@ commands = [["ruff", "check"], ["ruff", "format", "--check"]]
 description = "build documentation"
 extras = ["documentation"]
 commands = [["sphinx-build", "-M", "html", "docs", "docs/_build"]]
+
+[tool.tox.env.notebooks]
+description = "execute the example notebooks in docs/ (API keys from env vars or docs/.env)"
+extras = ["notebooks"]
+pass_env = ["KNMI_OPENDATA_API_KEY", "KNMI_EDR_API_KEY"]
+commands = [["python", "docs/run_examples.py"]]
