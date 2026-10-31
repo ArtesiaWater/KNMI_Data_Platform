@@ -4,11 +4,11 @@ The clients expose one namespace per KNMI API, symmetric for async and sync use:
 
     async with AsyncKNMIClient() as client:
         ds = await client.opendata.get_dataset("dataset", "1.0", ...)
-        ts = await client.edr.get_location("collection", "06260", ...)
+        ts = await client.edr.get_location("collection", "0-20000-0-06260", ...)
 
     with KNMIClient() as client:  # same, but blocking
         ds = client.opendata.get_dataset("dataset", "1.0", ...)
-        ts = client.edr.get_location("collection", "06260", ...)
+        ts = client.edr.get_location("collection", "0-20000-0-06260", ...)
 """
 
 import asyncio
@@ -428,7 +428,7 @@ def get_timeseries(
     collection_id : str
         EDR collection ID (e.g. 'daily-in-situ-meteorological-observations').
     location_id : str
-        Station/location ID (e.g. '06260' for De Bilt; find ids via
+        Station/location ID (e.g. '0-20000-0-06260' for De Bilt; find ids via
         `AsyncEDRClient.locations`).
     start_time : TimeLike | None, default=None
         Start of the time interval (ISO-8601 string, pandas Timestamp, datetime,

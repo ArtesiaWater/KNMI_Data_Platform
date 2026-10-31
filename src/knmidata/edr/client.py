@@ -260,7 +260,7 @@ class AsyncEDRClient:
         collection_id : str
             EDR collection ID.
         location_id : str
-            Location identifier (station id, e.g. '06260' for De Bilt; see
+            Location identifier (station id, e.g. '0-20000-0-06260' for De Bilt; see
             `locations()`).
         start_time : TimeLike | None, default=None
             Start of the time interval (see `get_position`).
@@ -279,7 +279,7 @@ class AsyncEDRClient:
         if not location_id:
             raise ValueError(
                 "location_id must be a non-empty station id; get ids from locations() "
-                "(the GeoJSON feature 'id', e.g. '06260' for De Bilt)."
+                "(the GeoJSON feature 'id', e.g. '0-20000-0-06260' for De Bilt)."
             )
         endpoint = f"{EDR_BASE_URL}/collections/{collection_id}/locations/{location_id}"
         params = _build_query_params(start_time, end_time, parameters, output_format)

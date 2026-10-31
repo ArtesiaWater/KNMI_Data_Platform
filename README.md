@@ -46,10 +46,10 @@ with knmidata.KNMIClient() as client:
         max_files=10,
     )
 
-    # EDR: time series for one station (De Bilt, WSI 06260)
+    # EDR: time series for one station (De Bilt, WSI 0-20000-0-06260)
     ts = client.edr.get_location(
         "daily-in-situ-meteorological-observations",
-        "06260",
+        "0-20000-0-06260",
         start_time="2026-06-01",
         end_time="2026-06-08",
         parameters=["RH", "TG", "EV24"],  # or a single variable: "TG"
@@ -74,7 +74,7 @@ ds = knmidata.get_dataset(
 
 ts = knmidata.get_timeseries(
     "daily-in-situ-meteorological-observations",
-    "06260",
+    "0-20000-0-06260",
     start_time="2026-06-01",
     end_time="2026-06-08",
     parameters="TG",
@@ -93,7 +93,7 @@ async with knmidata.AsyncKNMIClient() as client:
         "daily-in-situ-meteorological-observations", "1.0", ...
     )
     ts = await client.edr.get_location(
-        "daily-in-situ-meteorological-observations", "06260", ...
+        "daily-in-situ-meteorological-observations", "0-20000-0-06260", ...
     )
 ```
 
