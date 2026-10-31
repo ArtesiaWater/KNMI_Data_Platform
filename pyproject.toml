@@ -38,13 +38,18 @@ dependencies = [
 [project.optional-dependencies]
 testing = ["pytest", "pytest-asyncio", "pytest-cov", "respx", "ruff", "ty"]
 notebooks = [
-    "jupytext>=1.16",
+    "nbconvert>=7",
     "nbclient>=0.10",
     "ipykernel>=6.29",
     "matplotlib>=3.8",
 ]
+documentation = [
+    "sphinx>=8.2",
+    "myst-parser",
+    "nbsphinx",
+]
 dev = [
-    "knmidata[testing,notebooks]",
+    "knmidata[testing,notebooks,documentation]",
     "python-dotenv>=1.0.0",
     "pre-commit",
     "tox-uv>=1.0",
@@ -90,3 +95,8 @@ commands = [["ty", "check", "src"]]
 description = "run format and lint checks with ruff"
 extras = ["testing"]
 commands = [["ruff", "check"], ["ruff", "format", "--check"]]
+
+[tool.tox.env.docu]
+description = "build documentation"
+extras = ["documentation"]
+commands = [["sphinx-build", "-M", "html", "docs", "docs/_build"]]

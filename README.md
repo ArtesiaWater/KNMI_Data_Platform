@@ -101,7 +101,11 @@ async with knmidata.AsyncKNMIClient() as client:
 
 `client.opendata` also exposes `list_files`, `get_download_url`, `download_files` (API → disk), `open_dataset` (disk → `xr.Dataset`), and `get_dataset` (either). `client.edr` exposes metadata (`collections`, `collection`, `instances`, `locations`) and the queries `get_location`, `get_position`, `get_area`, `get_cube`, plus `nearest_location` to find a station by coordinates.
 
-See [docs/example_daily_in_situ_observations.py](docs/example_daily_in_situ_observations.py) for a full walkthrough comparing both APIs.
+See [docs/example_daily_in_situ_observations.ipynb](docs/example_daily_in_situ_observations.ipynb) for a full walkthrough comparing both APIs.
+
+## Documentation
+
+The documentation (example walkthrough and API reference) is built with Sphinx and published to GitHub Pages at [artesiawater.github.io/KNMI_Data_Platform](https://artesiawater.github.io/KNMI_Data_Platform/).
 
 ## Development
 
