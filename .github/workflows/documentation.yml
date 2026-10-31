@@ -43,12 +43,15 @@ jobs:
           uv venv
           uv pip install tox-uv
 
+      - name: Set up tox environment for notebook execution
+        run: |
+          uv run tox -e notebooks --notest
+
       - name: Execute example notebooks
         env:
           KNMI_OPENDATA_API_KEY: ${{ secrets.KNMI_OPENDATA_API_KEY }}
           KNMI_EDR_API_KEY: ${{ secrets.KNMI_EDR_API_KEY }}
         run: |
-          uv run tox -e notebooks --notest
           uv run tox -e notebooks --skip-pkg-install
 
       - name: Upload executed notebooks
@@ -64,7 +67,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y pandoc
 
-      - name: Set up tox environment
+      - name: Set up tox environment for documentation build
         run: |
           uv run tox -e docu --notest
 
