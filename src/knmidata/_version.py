@@ -1,9 +1,17 @@
 """Version information for knmidata."""
 
-from importlib.metadata import version
+import tomllib
+from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
 from platform import python_version
 
-__version__ = version("knmidata")
+try:
+    __version__ = version("knmidata")
+except PackageNotFoundError:
+    # Not installed (e.g. running from a bare source checkout): read the
+    # single source of truth in pyproject.toml.
+    with (Path(__file__).resolve().parents[2] / "pyproject.toml").open("rb") as fh:
+        __version__ = tomllib.load(fh)["project"]["version"]
 
 
 def get_versions() -> dict[str, str]:
