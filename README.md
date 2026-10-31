@@ -115,3 +115,5 @@ uv run pytest            # tests with coverage
 uv run ruff check        # lint
 uv run ty check src      # type check
 ```
+
+This KNMIdata python package was first setup by under [macukadam/KNMI_Weather_API](https://github.com/macukadam/KNMI_weather_api) who we thank for their initial work. KNMIdata is now maintained by [artesia-water](www.artesia-water.nl).
