@@ -7,7 +7,8 @@ name = "knmidata"
 version = "2.0.0"
 description = "Python client for the KNMI Data Platform with native xarray support."
 readme = "README.md"
-license = "MIT"
+license = "MPL-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.11, <3.15"
 authors = [
     { name = "Martin Vonk", email = "m.vonk@artesia-water.nl" },
@@ -64,7 +65,7 @@ source = ["knmidata"]
 
 [tool.ruff]
 extend-include = ["*.ipynb"]
-lint.extend-select = ["I", "D", "B", "UP", "SIM", "C4", "RUF"]
+lint.extend-select = ["I", "D"]
 lint.pydocstyle.convention = "numpy"
 lint.per-file-ignores = { "tests/**" = ["D"] }
 show-fixes = true
@@ -75,7 +76,7 @@ exclude = ["tests/**", "docs/**"]
 
 [tool.tox]
 requires = ["tox-uv>=1.0"]
-env_list = ["py311", "py315", "ruff", "typety"]
+env_list = ["py311", "py314", "py315", "ruff", "typety"]
 
 [tool.tox.env_run_base]
 description = "run unit tests"
