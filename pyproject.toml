@@ -43,6 +43,7 @@ notebooks = [
     "ipykernel>=6.29",
     "matplotlib>=3.8",
     "python-dotenv>=1.0.0",
+    "geopandas>=1.2.0",
 ]
 documentation = ["sphinx>=8.2", "myst-parser", "nbsphinx"]
 dev = [
