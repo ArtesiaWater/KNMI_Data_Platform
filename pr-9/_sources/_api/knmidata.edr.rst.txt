@@ -1,0 +1,19 @@
+knmidata.edr package
+====================
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 2
+
+   knmidata.edr.client
+   knmidata.edr.parsers
+
+Module contents
+---------------
+
+.. automodule:: knmidata.edr
+   :members:
+   :show-inheritance:
+   :undoc-members:

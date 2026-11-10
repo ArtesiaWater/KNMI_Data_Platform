@@ -1,0 +1,7 @@
+knmidata.edr.parsers module
+===========================
+
+.. automodule:: knmidata.edr.parsers
+   :members:
+   :show-inheritance:
+   :undoc-members:
