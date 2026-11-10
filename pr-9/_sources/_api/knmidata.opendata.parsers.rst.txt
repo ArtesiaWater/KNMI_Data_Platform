@@ -1,7 +1,0 @@
-knmidata.opendata.parsers module
-================================
-
-.. automodule:: knmidata.opendata.parsers
-   :members:
-   :show-inheritance:
-   :undoc-members:

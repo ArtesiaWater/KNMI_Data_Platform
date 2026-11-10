@@ -1,7 +1,0 @@
-knmidata.config module
-======================
-
-.. automodule:: knmidata.config
-   :members:
-   :show-inheritance:
-   :undoc-members:
