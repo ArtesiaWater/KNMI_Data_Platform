@@ -122,9 +122,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    environment:
-      name: pr-docs-preview
-      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}/
     steps:
       - uses: actions/checkout@v7
 
