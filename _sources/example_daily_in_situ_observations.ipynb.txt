@@ -5,10 +5,10 @@
    "id": "0d4e3676",
    "metadata": {
     "papermill": {
-     "duration": 0.002185,
-     "end_time": "2026-11-10T10:38:40.244096+00:00",
+     "duration": 0.00214,
+     "end_time": "2026-11-10T11:02:28.951435+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:40.241911+00:00",
+     "start_time": "2026-11-10T11:02:28.949295+00:00",
      "status": "completed"
     },
     "tags": []
@@ -36,10 +36,10 @@
    "id": "6aaa0705",
    "metadata": {
     "papermill": {
-     "duration": 0.001767,
-     "end_time": "2026-11-10T10:38:40.247969+00:00",
+     "duration": 0.001218,
+     "end_time": "2026-11-10T11:02:28.954171+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:40.246202+00:00",
+     "start_time": "2026-11-10T11:02:28.952953+00:00",
      "status": "completed"
     },
     "tags": []
@@ -76,10 +76,10 @@
    "id": "ddcca7a3",
    "metadata": {
     "papermill": {
-     "duration": 0.001742,
-     "end_time": "2026-11-10T10:38:40.251166+00:00",
+     "duration": 0.001184,
+     "end_time": "2026-11-10T11:02:28.956640+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:40.249424+00:00",
+     "start_time": "2026-11-10T11:02:28.955456+00:00",
      "status": "completed"
     },
     "tags": []
@@ -106,10 +106,10 @@
    "id": "e956da2a",
    "metadata": {
     "papermill": {
-     "duration": 0.00131,
-     "end_time": "2026-11-10T10:38:40.253864+00:00",
+     "duration": 0.001204,
+     "end_time": "2026-11-10T11:02:28.959080+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:40.252554+00:00",
+     "start_time": "2026-11-10T11:02:28.957876+00:00",
      "status": "completed"
     },
     "tags": []
@@ -166,17 +166,17 @@
    "id": "d7dd660b",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:40.257943Z",
-     "iopub.status.busy": "2026-11-10T10:38:40.257610Z",
-     "iopub.status.idle": "2026-11-10T10:38:43.025914Z",
-     "shell.execute_reply": "2026-11-10T10:38:43.025092Z"
+     "iopub.execute_input": "2026-11-10T11:02:28.962574Z",
+     "iopub.status.busy": "2026-11-10T11:02:28.962395Z",
+     "iopub.status.idle": "2026-11-10T11:02:32.035328Z",
+     "shell.execute_reply": "2026-11-10T11:02:32.034732Z"
     },
     "lines_to_next_cell": 0,
     "papermill": {
-     "duration": 2.771262,
-     "end_time": "2026-11-10T10:38:43.026493+00:00",
+     "duration": 3.075493,
+     "end_time": "2026-11-10T11:02:32.035793+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:40.255231+00:00",
+     "start_time": "2026-11-10T11:02:28.960300+00:00",
      "status": "completed"
     },
     "tags": []
@@ -236,10 +236,10 @@
    "id": "0cec2759",
    "metadata": {
     "papermill": {
-     "duration": 0.001575,
-     "end_time": "2026-11-10T10:38:43.030061+00:00",
+     "duration": 0.001401,
+     "end_time": "2026-11-10T11:02:32.038968+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:43.028486+00:00",
+     "start_time": "2026-11-10T11:02:32.037567+00:00",
      "status": "completed"
     },
     "tags": []
@@ -260,16 +260,16 @@
    "id": "113f870a",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:43.034249Z",
-     "iopub.status.busy": "2026-11-10T10:38:43.033909Z",
-     "iopub.status.idle": "2026-11-10T10:38:43.174700Z",
-     "shell.execute_reply": "2026-11-10T10:38:43.174031Z"
+     "iopub.execute_input": "2026-11-10T11:02:32.042567Z",
+     "iopub.status.busy": "2026-11-10T11:02:32.042310Z",
+     "iopub.status.idle": "2026-11-10T11:02:32.168189Z",
+     "shell.execute_reply": "2026-11-10T11:02:32.167659Z"
     },
     "papermill": {
-     "duration": 0.143798,
-     "end_time": "2026-11-10T10:38:43.175366+00:00",
+     "duration": 0.128504,
+     "end_time": "2026-11-10T11:02:32.168851+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:43.031568+00:00",
+     "start_time": "2026-11-10T11:02:32.040347+00:00",
      "status": "completed"
     },
     "tags": []
@@ -320,10 +320,10 @@
    "id": "5ab381c3",
    "metadata": {
     "papermill": {
-     "duration": 0.001618,
-     "end_time": "2026-11-10T10:38:43.178899+00:00",
+     "duration": 0.001345,
+     "end_time": "2026-11-10T11:02:32.171987+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:43.177281+00:00",
+     "start_time": "2026-11-10T11:02:32.170642+00:00",
      "status": "completed"
     },
     "tags": []
@@ -352,17 +352,17 @@
    "id": "1a5a5764",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:43.182741Z",
-     "iopub.status.busy": "2026-11-10T10:38:43.182579Z",
-     "iopub.status.idle": "2026-11-10T10:38:43.947912Z",
-     "shell.execute_reply": "2026-11-10T10:38:43.947133Z"
+     "iopub.execute_input": "2026-11-10T11:02:32.175316Z",
+     "iopub.status.busy": "2026-11-10T11:02:32.175187Z",
+     "iopub.status.idle": "2026-11-10T11:02:32.794151Z",
+     "shell.execute_reply": "2026-11-10T11:02:32.793522Z"
     },
     "lines_to_next_cell": 2,
     "papermill": {
-     "duration": 0.768353,
-     "end_time": "2026-11-10T10:38:43.948747+00:00",
+     "duration": 0.621282,
+     "end_time": "2026-11-10T11:02:32.794594+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:43.180394+00:00",
+     "start_time": "2026-11-10T11:02:32.173312+00:00",
      "status": "completed"
     },
     "tags": []
@@ -391,10 +391,10 @@
    "id": "1e965dfc",
    "metadata": {
     "papermill": {
-     "duration": 0.00187,
-     "end_time": "2026-11-10T10:38:43.952947+00:00",
+     "duration": 0.001397,
+     "end_time": "2026-11-10T11:02:32.797753+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:43.951077+00:00",
+     "start_time": "2026-11-10T11:02:32.796356+00:00",
      "status": "completed"
     },
     "tags": []
@@ -414,16 +414,16 @@
    "id": "d3eb150d",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:43.957138Z",
-     "iopub.status.busy": "2026-11-10T10:38:43.956930Z",
-     "iopub.status.idle": "2026-11-10T10:38:46.874566Z",
-     "shell.execute_reply": "2026-11-10T10:38:46.873744Z"
+     "iopub.execute_input": "2026-11-10T11:02:32.801205Z",
+     "iopub.status.busy": "2026-11-10T11:02:32.801067Z",
+     "iopub.status.idle": "2026-11-10T11:02:35.514747Z",
+     "shell.execute_reply": "2026-11-10T11:02:35.514112Z"
     },
     "papermill": {
-     "duration": 2.920649,
-     "end_time": "2026-11-10T10:38:46.875130+00:00",
+     "duration": 2.716135,
+     "end_time": "2026-11-10T11:02:35.515235+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:43.954481+00:00",
+     "start_time": "2026-11-10T11:02:32.799100+00:00",
      "status": "completed"
     },
     "tags": []
@@ -497,10 +497,10 @@
    "id": "e4dd2098",
    "metadata": {
     "papermill": {
-     "duration": 0.045353,
-     "end_time": "2026-11-10T10:38:46.923623+00:00",
+     "duration": 0.001619,
+     "end_time": "2026-11-10T11:02:35.518701+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:46.878270+00:00",
+     "start_time": "2026-11-10T11:02:35.517082+00:00",
      "status": "completed"
     },
     "tags": []
@@ -536,16 +536,16 @@
    "id": "745b4ef6",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:46.989220Z",
-     "iopub.status.busy": "2026-11-10T10:38:46.988648Z",
-     "iopub.status.idle": "2026-11-10T10:38:47.283409Z",
-     "shell.execute_reply": "2026-11-10T10:38:47.282424Z"
+     "iopub.execute_input": "2026-11-10T11:02:35.522301Z",
+     "iopub.status.busy": "2026-11-10T11:02:35.522034Z",
+     "iopub.status.idle": "2026-11-10T11:02:35.880743Z",
+     "shell.execute_reply": "2026-11-10T11:02:35.880248Z"
     },
     "papermill": {
-     "duration": 0.298638,
-     "end_time": "2026-11-10T10:38:47.283941+00:00",
+     "duration": 0.361304,
+     "end_time": "2026-11-10T11:02:35.881415+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:46.985303+00:00",
+     "start_time": "2026-11-10T11:02:35.520111+00:00",
      "status": "completed"
     },
     "tags": []
@@ -573,17 +573,17 @@
    "id": "21a71ed8",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:47.288823Z",
-     "iopub.status.busy": "2026-11-10T10:38:47.288664Z",
-     "iopub.status.idle": "2026-11-10T10:38:47.416074Z",
-     "shell.execute_reply": "2026-11-10T10:38:47.415049Z"
+     "iopub.execute_input": "2026-11-10T11:02:35.885414Z",
+     "iopub.status.busy": "2026-11-10T11:02:35.885273Z",
+     "iopub.status.idle": "2026-11-10T11:02:36.029913Z",
+     "shell.execute_reply": "2026-11-10T11:02:36.029406Z"
     },
     "lines_to_next_cell": 2,
     "papermill": {
-     "duration": 0.130552,
-     "end_time": "2026-11-10T10:38:47.416674+00:00",
+     "duration": 0.147163,
+     "end_time": "2026-11-10T11:02:36.030419+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:47.286122+00:00",
+     "start_time": "2026-11-10T11:02:35.883256+00:00",
      "status": "completed"
     },
     "tags": []
@@ -623,10 +623,10 @@
    "id": "ce067304",
    "metadata": {
     "papermill": {
-     "duration": 0.001789,
-     "end_time": "2026-11-10T10:38:47.420906+00:00",
+     "duration": 0.001503,
+     "end_time": "2026-11-10T11:02:36.033763+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:47.419117+00:00",
+     "start_time": "2026-11-10T11:02:36.032260+00:00",
      "status": "completed"
     },
     "tags": []
@@ -646,16 +646,16 @@
    "id": "3d2ad0f0",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:47.425152Z",
-     "iopub.status.busy": "2026-11-10T10:38:47.424951Z",
-     "iopub.status.idle": "2026-11-10T10:38:47.557525Z",
-     "shell.execute_reply": "2026-11-10T10:38:47.556801Z"
+     "iopub.execute_input": "2026-11-10T11:02:36.037249Z",
+     "iopub.status.busy": "2026-11-10T11:02:36.037127Z",
+     "iopub.status.idle": "2026-11-10T11:02:36.183195Z",
+     "shell.execute_reply": "2026-11-10T11:02:36.182665Z"
     },
     "papermill": {
-     "duration": 0.135652,
-     "end_time": "2026-11-10T10:38:47.558198+00:00",
+     "duration": 0.148466,
+     "end_time": "2026-11-10T11:02:36.183668+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:47.422546+00:00",
+     "start_time": "2026-11-10T11:02:36.035202+00:00",
      "status": "completed"
     },
     "tags": []
@@ -698,10 +698,10 @@
    "id": "b3301ba0",
    "metadata": {
     "papermill": {
-     "duration": 0.001833,
-     "end_time": "2026-11-10T10:38:47.562140+00:00",
+     "duration": 0.001502,
+     "end_time": "2026-11-10T11:02:36.187065+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:47.560307+00:00",
+     "start_time": "2026-11-10T11:02:36.185563+00:00",
      "status": "completed"
     },
     "tags": []
@@ -721,16 +721,16 @@
    "id": "e0b520dc",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:47.566513Z",
-     "iopub.status.busy": "2026-11-10T10:38:47.566343Z",
-     "iopub.status.idle": "2026-11-10T10:38:48.196684Z",
-     "shell.execute_reply": "2026-11-10T10:38:48.195845Z"
+     "iopub.execute_input": "2026-11-10T11:02:36.190700Z",
+     "iopub.status.busy": "2026-11-10T11:02:36.190571Z",
+     "iopub.status.idle": "2026-11-10T11:02:36.680682Z",
+     "shell.execute_reply": "2026-11-10T11:02:36.680017Z"
     },
     "papermill": {
-     "duration": 0.633773,
-     "end_time": "2026-11-10T10:38:48.197618+00:00",
+     "duration": 0.492764,
+     "end_time": "2026-11-10T11:02:36.681305+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:47.563845+00:00",
+     "start_time": "2026-11-10T11:02:36.188541+00:00",
      "status": "completed"
     },
     "tags": []
@@ -787,10 +787,10 @@
    "id": "7f42d4e0",
    "metadata": {
     "papermill": {
-     "duration": 0.002424,
-     "end_time": "2026-11-10T10:38:48.202879+00:00",
+     "duration": 0.002066,
+     "end_time": "2026-11-10T11:02:36.685937+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:48.200455+00:00",
+     "start_time": "2026-11-10T11:02:36.683871+00:00",
      "status": "completed"
     },
     "tags": []
@@ -813,16 +813,16 @@
    "id": "375aa017",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:48.208466Z",
-     "iopub.status.busy": "2026-11-10T10:38:48.208299Z",
-     "iopub.status.idle": "2026-11-10T10:38:48.452234Z",
-     "shell.execute_reply": "2026-11-10T10:38:48.451293Z"
+     "iopub.execute_input": "2026-11-10T11:02:36.697765Z",
+     "iopub.status.busy": "2026-11-10T11:02:36.697632Z",
+     "iopub.status.idle": "2026-11-10T11:02:36.978554Z",
+     "shell.execute_reply": "2026-11-10T11:02:36.978014Z"
     },
     "papermill": {
-     "duration": 0.247568,
-     "end_time": "2026-11-10T10:38:48.452822+00:00",
+     "duration": 0.284172,
+     "end_time": "2026-11-10T11:02:36.979130+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:48.205254+00:00",
+     "start_time": "2026-11-10T11:02:36.694958+00:00",
      "status": "completed"
     },
     "tags": []
@@ -863,16 +863,16 @@
    "id": "637543df",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:48.459707Z",
-     "iopub.status.busy": "2026-11-10T10:38:48.459505Z",
-     "iopub.status.idle": "2026-11-10T10:38:48.471910Z",
-     "shell.execute_reply": "2026-11-10T10:38:48.471151Z"
+     "iopub.execute_input": "2026-11-10T11:02:36.984576Z",
+     "iopub.status.busy": "2026-11-10T11:02:36.984426Z",
+     "iopub.status.idle": "2026-11-10T11:02:36.994096Z",
+     "shell.execute_reply": "2026-11-10T11:02:36.993564Z"
     },
     "papermill": {
-     "duration": 0.016101,
-     "end_time": "2026-11-10T10:38:48.472429+00:00",
+     "duration": 0.01279,
+     "end_time": "2026-11-10T11:02:36.994496+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:48.456328+00:00",
+     "start_time": "2026-11-10T11:02:36.981706+00:00",
      "status": "completed"
     },
     "tags": []
@@ -1433,12 +1433,12 @@
        "Data variables:\n",
        "    EV24     (station, time) float64 64B 3.9 3.8 1.5 2.5 2.6 3.0 2.4 2.2\n",
        "    RH       (station, time) float64 64B 0.0 0.0 11.7 3.9 0.0 12.4 0.5 1.1\n",
-       "    TG       (station, time) float64 64B 19.1 18.7 16.5 16.0 15.8 16.0 15.7 15.4</pre><div class='xr-wrap' style='display:none'><div class='xr-header'><div class='xr-obj-type'>xarray.Dataset</div></div><ul class='xr-sections'><li class='xr-section-item'><input id='section-be8624b4-4cb2-4cab-a6da-e9bd52ba23aa' class='xr-section-summary-in' type='checkbox' disabled /><label for='section-be8624b4-4cb2-4cab-a6da-e9bd52ba23aa' class='xr-section-summary'>Dimensions:</label><div class='xr-section-inline-details'><ul class='xr-dim-list'><li><span class='xr-has-index'>station</span>: 1</li><li><span class='xr-has-index'>time</span>: 8</li></ul></div></li><li class='xr-section-item'><input id='section-2231bae4-8e64-4776-8156-648660729e06' class='xr-section-summary-in' type='checkbox' checked /><label for='section-2231bae4-8e64-4776-8156-648660729e06' class='xr-section-summary' title='Expand/collapse section'>Coordinates: <span>(4)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>station</span></div><div class='xr-var-dims'>(station)</div><div class='xr-var-dtype'>&lt;U14</div><div class='xr-var-preview xr-preview'>&#x27;5.1797,52.0989&#x27;</div><input id='attrs-05339cb4-a6b5-4c42-81f1-55194d198f9b' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-05339cb4-a6b5-4c42-81f1-55194d198f9b' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-f9faa8d6-bc4f-4456-851d-6c1d0e560da3' class='xr-var-data-in' type='checkbox'><label for='data-f9faa8d6-bc4f-4456-851d-6c1d0e560da3' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([&#x27;5.1797,52.0989&#x27;], dtype=&#x27;&lt;U14&#x27;)</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>lon</span></div><div class='xr-var-dims'>(station)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>5.18</div><input id='attrs-4de21d59-18b5-492d-b087-ced87f0fe0a0' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-4de21d59-18b5-492d-b087-ced87f0fe0a0' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-c21ce25c-7409-4e2a-aff4-fd16a87055c3' class='xr-var-data-in' type='checkbox'><label for='data-c21ce25c-7409-4e2a-aff4-fd16a87055c3' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([5.1797])</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>lat</span></div><div class='xr-var-dims'>(station)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>52.1</div><input id='attrs-3be80b4e-9e4a-4837-9097-80a94fbd3ca9' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-3be80b4e-9e4a-4837-9097-80a94fbd3ca9' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-41374c2e-09a7-4049-af3b-c10016c05cbd' class='xr-var-data-in' type='checkbox'><label for='data-41374c2e-09a7-4049-af3b-c10016c05cbd' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([52.0989])</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>time</span></div><div class='xr-var-dims'>(time)</div><div class='xr-var-dtype'>datetime64[us, UTC]</div><div class='xr-var-preview xr-preview'>2026-06-01 00:00:00+00:00 ... 20...</div><input id='attrs-217fcefd-822d-40b7-a850-8acb5289c94a' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-217fcefd-822d-40b7-a850-8acb5289c94a' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-80707dd3-a669-48c1-a293-30223c10dd0b' class='xr-var-data-in' type='checkbox'><label for='data-80707dd3-a669-48c1-a293-30223c10dd0b' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>&lt;DatetimeArray&gt;\n",
+       "    TG       (station, time) float64 64B 19.1 18.7 16.5 16.0 15.8 16.0 15.7 15.4</pre><div class='xr-wrap' style='display:none'><div class='xr-header'><div class='xr-obj-type'>xarray.Dataset</div></div><ul class='xr-sections'><li class='xr-section-item'><input id='section-c1bb511d-6c83-4075-b75f-d5f493e1ec07' class='xr-section-summary-in' type='checkbox' disabled /><label for='section-c1bb511d-6c83-4075-b75f-d5f493e1ec07' class='xr-section-summary'>Dimensions:</label><div class='xr-section-inline-details'><ul class='xr-dim-list'><li><span class='xr-has-index'>station</span>: 1</li><li><span class='xr-has-index'>time</span>: 8</li></ul></div></li><li class='xr-section-item'><input id='section-dd1982c7-0547-470c-9c44-53ee464c578e' class='xr-section-summary-in' type='checkbox' checked /><label for='section-dd1982c7-0547-470c-9c44-53ee464c578e' class='xr-section-summary' title='Expand/collapse section'>Coordinates: <span>(4)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>station</span></div><div class='xr-var-dims'>(station)</div><div class='xr-var-dtype'>&lt;U14</div><div class='xr-var-preview xr-preview'>&#x27;5.1797,52.0989&#x27;</div><input id='attrs-f13a9b6d-6a7a-450a-af68-e1e301a6db75' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-f13a9b6d-6a7a-450a-af68-e1e301a6db75' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-747a2658-879c-4a1f-8a99-2e4849cd841d' class='xr-var-data-in' type='checkbox'><label for='data-747a2658-879c-4a1f-8a99-2e4849cd841d' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([&#x27;5.1797,52.0989&#x27;], dtype=&#x27;&lt;U14&#x27;)</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>lon</span></div><div class='xr-var-dims'>(station)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>5.18</div><input id='attrs-7193a055-8bbb-4704-8796-d1d600d609b9' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-7193a055-8bbb-4704-8796-d1d600d609b9' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-dc40c85c-7660-48d0-97d1-33172bfff829' class='xr-var-data-in' type='checkbox'><label for='data-dc40c85c-7660-48d0-97d1-33172bfff829' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([5.1797])</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>lat</span></div><div class='xr-var-dims'>(station)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>52.1</div><input id='attrs-acec2f8c-1838-4cd4-92e7-fdc2e6a6da7e' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-acec2f8c-1838-4cd4-92e7-fdc2e6a6da7e' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-b0b532f5-8adc-4c5c-97c2-556c0779a529' class='xr-var-data-in' type='checkbox'><label for='data-b0b532f5-8adc-4c5c-97c2-556c0779a529' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>array([52.0989])</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span class='xr-has-index'>time</span></div><div class='xr-var-dims'>(time)</div><div class='xr-var-dtype'>datetime64[us, UTC]</div><div class='xr-var-preview xr-preview'>2026-06-01 00:00:00+00:00 ... 20...</div><input id='attrs-a81e722a-dadd-44ff-bacc-4ea7521f180d' class='xr-var-attrs-in' type='checkbox' disabled><label for='attrs-a81e722a-dadd-44ff-bacc-4ea7521f180d' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-ee4228c8-0cc9-45b4-be2c-4281a82bd062' class='xr-var-data-in' type='checkbox'><label for='data-ee4228c8-0cc9-45b4-be2c-4281a82bd062' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'></dl></div><div class='xr-var-data'><pre>&lt;DatetimeArray&gt;\n",
        "[&#x27;2026-06-01 00:00:00+00:00&#x27;, &#x27;2026-06-02 00:00:00+00:00&#x27;,\n",
        " &#x27;2026-06-03 00:00:00+00:00&#x27;, &#x27;2026-06-04 00:00:00+00:00&#x27;,\n",
        " &#x27;2026-06-05 00:00:00+00:00&#x27;, &#x27;2026-06-06 00:00:00+00:00&#x27;,\n",
        " &#x27;2026-06-07 00:00:00+00:00&#x27;, &#x27;2026-06-08 00:00:00+00:00&#x27;]\n",
-       "Length: 8, dtype: datetime64[us, UTC]</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-fa3d7604-ae3c-439d-ac19-9ae83af4912a' class='xr-section-summary-in' type='checkbox' checked /><label for='section-fa3d7604-ae3c-439d-ac19-9ae83af4912a' class='xr-section-summary' title='Expand/collapse section'>Data variables: <span>(3)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span>EV24</span></div><div class='xr-var-dims'>(station, time)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>3.9 3.8 1.5 2.5 2.6 3.0 2.4 2.2</div><input id='attrs-f42970cd-dbf8-4f21-a489-589e57671268' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-f42970cd-dbf8-4f21-a489-589e57671268' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-8372c821-ee7f-46df-9d0a-7580068f72b1' class='xr-var-data-in' type='checkbox'><label for='data-8372c821-ee7f-46df-9d0a-7580068f72b1' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>{&#x27;value&#x27;: &#x27;mm&#x27;, &#x27;type&#x27;: &#x27;https://qudt.org/vocab/unit/MilliM&#x27;}</dd><dt><span>long_name :</span></dt><dd>Potential evapotranspiration (Makkink)</dd><dt><span>unit_label :</span></dt><dd>{&#x27;en&#x27;: &#x27;millimeter&#x27;}</dd><dt><span>observed_property :</span></dt><dd>{&#x27;en&#x27;: &#x27;Water potential evapotranspiration amount&#x27;}</dd><dt><span>measurement_type :</span></dt><dd>{&#x27;method&#x27;: &#x27;N/A&#x27;, &#x27;duration&#x27;: &#x27;-P1D&#x27;}</dd></dl></div><div class='xr-var-data'><pre>array([[3.9, 3.8, 1.5, 2.5, 2.6, 3. , 2.4, 2.2]])</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>RH</span></div><div class='xr-var-dims'>(station, time)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>0.0 0.0 11.7 3.9 0.0 12.4 0.5 1.1</div><input id='attrs-e7ea8e60-8b87-4d68-a672-801892455cf5' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-e7ea8e60-8b87-4d68-a672-801892455cf5' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-05f1b6f3-6e16-430c-9f05-cb0efdcab7fc' class='xr-var-data-in' type='checkbox'><label for='data-05f1b6f3-6e16-430c-9f05-cb0efdcab7fc' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>{&#x27;value&#x27;: &#x27;mm&#x27;, &#x27;type&#x27;: &#x27;https://qudt.org/vocab/unit/MilliM&#x27;}</dd><dt><span>long_name :</span></dt><dd>Daily precipitation amount, in millimeters</dd><dt><span>unit_label :</span></dt><dd>{&#x27;en&#x27;: &#x27;millimeter&#x27;}</dd><dt><span>observed_property :</span></dt><dd>{&#x27;en&#x27;: &#x27;Precipitation amount&#x27;}</dd><dt><span>measurement_type :</span></dt><dd>{&#x27;method&#x27;: &#x27;sum&#x27;, &#x27;duration&#x27;: &#x27;-P1D&#x27;}</dd></dl></div><div class='xr-var-data'><pre>array([[ 0. ,  0. , 11.7,  3.9,  0. , 12.4,  0.5,  1.1]])</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>TG</span></div><div class='xr-var-dims'>(station, time)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>19.1 18.7 16.5 ... 16.0 15.7 15.4</div><input id='attrs-98d0b903-ec18-4703-a8eb-e3a942422dc8' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-98d0b903-ec18-4703-a8eb-e3a942422dc8' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-ef13c836-f82d-4a5a-bd02-c3b6c20e526a' class='xr-var-data-in' type='checkbox'><label for='data-ef13c836-f82d-4a5a-bd02-c3b6c20e526a' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>{&#x27;value&#x27;: &#x27;°C&#x27;, &#x27;type&#x27;: &#x27;https://qudt.org/vocab/unit/DEG_C&#x27;}</dd><dt><span>long_name :</span></dt><dd>Daily mean air temperature at 1.50 meters, in degrees Celsius</dd><dt><span>unit_label :</span></dt><dd>{&#x27;en&#x27;: &#x27;degrees celsius&#x27;}</dd><dt><span>observed_property :</span></dt><dd>{&#x27;en&#x27;: &#x27;Air temperature&#x27;}</dd><dt><span>measurement_type :</span></dt><dd>{&#x27;method&#x27;: &#x27;mean&#x27;, &#x27;duration&#x27;: &#x27;-P1D&#x27;}</dd></dl></div><div class='xr-var-data'><pre>array([[19.1, 18.7, 16.5, 16. , 15.8, 16. , 15.7, 15.4]])</pre></div></li></ul></div></li></ul></div></div>"
+       "Length: 8, dtype: datetime64[us, UTC]</pre></div></li></ul></div></li><li class='xr-section-item'><input id='section-f247fb78-16c8-4f6b-8194-cd3d7c000275' class='xr-section-summary-in' type='checkbox' checked /><label for='section-f247fb78-16c8-4f6b-8194-cd3d7c000275' class='xr-section-summary' title='Expand/collapse section'>Data variables: <span>(3)</span></label><div class='xr-section-inline-details'></div><div class='xr-section-details'><ul class='xr-var-list'><li class='xr-var-item'><div class='xr-var-name'><span>EV24</span></div><div class='xr-var-dims'>(station, time)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>3.9 3.8 1.5 2.5 2.6 3.0 2.4 2.2</div><input id='attrs-ddb8c76a-76d2-4028-a023-44a9c8cd6b35' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-ddb8c76a-76d2-4028-a023-44a9c8cd6b35' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-fdb85428-6378-4b34-bceb-9376fba468e8' class='xr-var-data-in' type='checkbox'><label for='data-fdb85428-6378-4b34-bceb-9376fba468e8' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>{&#x27;value&#x27;: &#x27;mm&#x27;, &#x27;type&#x27;: &#x27;https://qudt.org/vocab/unit/MilliM&#x27;}</dd><dt><span>long_name :</span></dt><dd>Potential evapotranspiration (Makkink)</dd><dt><span>unit_label :</span></dt><dd>{&#x27;en&#x27;: &#x27;millimeter&#x27;}</dd><dt><span>observed_property :</span></dt><dd>{&#x27;en&#x27;: &#x27;Water potential evapotranspiration amount&#x27;}</dd><dt><span>measurement_type :</span></dt><dd>{&#x27;method&#x27;: &#x27;N/A&#x27;, &#x27;duration&#x27;: &#x27;-P1D&#x27;}</dd></dl></div><div class='xr-var-data'><pre>array([[3.9, 3.8, 1.5, 2.5, 2.6, 3. , 2.4, 2.2]])</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>RH</span></div><div class='xr-var-dims'>(station, time)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>0.0 0.0 11.7 3.9 0.0 12.4 0.5 1.1</div><input id='attrs-4ffb47eb-3c37-4294-b05d-735d47cfb985' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-4ffb47eb-3c37-4294-b05d-735d47cfb985' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-1baef468-93c5-469d-baad-7de574519cc9' class='xr-var-data-in' type='checkbox'><label for='data-1baef468-93c5-469d-baad-7de574519cc9' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>{&#x27;value&#x27;: &#x27;mm&#x27;, &#x27;type&#x27;: &#x27;https://qudt.org/vocab/unit/MilliM&#x27;}</dd><dt><span>long_name :</span></dt><dd>Daily precipitation amount, in millimeters</dd><dt><span>unit_label :</span></dt><dd>{&#x27;en&#x27;: &#x27;millimeter&#x27;}</dd><dt><span>observed_property :</span></dt><dd>{&#x27;en&#x27;: &#x27;Precipitation amount&#x27;}</dd><dt><span>measurement_type :</span></dt><dd>{&#x27;method&#x27;: &#x27;sum&#x27;, &#x27;duration&#x27;: &#x27;-P1D&#x27;}</dd></dl></div><div class='xr-var-data'><pre>array([[ 0. ,  0. , 11.7,  3.9,  0. , 12.4,  0.5,  1.1]])</pre></div></li><li class='xr-var-item'><div class='xr-var-name'><span>TG</span></div><div class='xr-var-dims'>(station, time)</div><div class='xr-var-dtype'>float64</div><div class='xr-var-preview xr-preview'>19.1 18.7 16.5 ... 16.0 15.7 15.4</div><input id='attrs-6a4e268d-96d6-4bf1-b19b-0282fec01ed4' class='xr-var-attrs-in' type='checkbox' ><label for='attrs-6a4e268d-96d6-4bf1-b19b-0282fec01ed4' title='Show/Hide attributes'><svg class='icon xr-icon-file-text2'><use xlink:href='#icon-file-text2'></use></svg></label><input id='data-0d74ec42-da56-4044-add3-c57086cc3b9d' class='xr-var-data-in' type='checkbox'><label for='data-0d74ec42-da56-4044-add3-c57086cc3b9d' title='Show/Hide data repr'><svg class='icon xr-icon-database'><use xlink:href='#icon-database'></use></svg></label><div class='xr-var-attrs'><dl class='xr-attrs'><dt><span>units :</span></dt><dd>{&#x27;value&#x27;: &#x27;°C&#x27;, &#x27;type&#x27;: &#x27;https://qudt.org/vocab/unit/DEG_C&#x27;}</dd><dt><span>long_name :</span></dt><dd>Daily mean air temperature at 1.50 meters, in degrees Celsius</dd><dt><span>unit_label :</span></dt><dd>{&#x27;en&#x27;: &#x27;degrees celsius&#x27;}</dd><dt><span>observed_property :</span></dt><dd>{&#x27;en&#x27;: &#x27;Air temperature&#x27;}</dd><dt><span>measurement_type :</span></dt><dd>{&#x27;method&#x27;: &#x27;mean&#x27;, &#x27;duration&#x27;: &#x27;-P1D&#x27;}</dd></dl></div><div class='xr-var-data'><pre>array([[19.1, 18.7, 16.5, 16. , 15.8, 16. , 15.7, 15.4]])</pre></div></li></ul></div></li></ul></div></div>"
       ],
       "text/plain": [
        "<xarray.Dataset> Size: 328B\n",
@@ -1469,17 +1469,17 @@
    "id": "30fceef7",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:48.479056Z",
-     "iopub.status.busy": "2026-11-10T10:38:48.478886Z",
-     "iopub.status.idle": "2026-11-10T10:38:48.599086Z",
-     "shell.execute_reply": "2026-11-10T10:38:48.598275Z"
+     "iopub.execute_input": "2026-11-10T11:02:37.000418Z",
+     "iopub.status.busy": "2026-11-10T11:02:37.000273Z",
+     "iopub.status.idle": "2026-11-10T11:02:37.144523Z",
+     "shell.execute_reply": "2026-11-10T11:02:37.144021Z"
     },
     "lines_to_next_cell": 0,
     "papermill": {
-     "duration": 0.12433,
-     "end_time": "2026-11-10T10:38:48.599735+00:00",
+     "duration": 0.148081,
+     "end_time": "2026-11-10T11:02:37.145203+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:48.475405+00:00",
+     "start_time": "2026-11-10T11:02:36.997122+00:00",
      "status": "completed"
     },
     "tags": []
@@ -1517,10 +1517,10 @@
    "id": "f92c4b8e",
    "metadata": {
     "papermill": {
-     "duration": 0.002985,
-     "end_time": "2026-11-10T10:38:48.606684+00:00",
+     "duration": 0.00262,
+     "end_time": "2026-11-10T11:02:37.150902+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:48.603699+00:00",
+     "start_time": "2026-11-10T11:02:37.148282+00:00",
      "status": "completed"
     },
     "tags": []
@@ -1541,16 +1541,16 @@
    "id": "8be4480a",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:48.613355Z",
-     "iopub.status.busy": "2026-11-10T10:38:48.613075Z",
-     "iopub.status.idle": "2026-11-10T10:38:48.798467Z",
-     "shell.execute_reply": "2026-11-10T10:38:48.797710Z"
+     "iopub.execute_input": "2026-11-10T11:02:37.156912Z",
+     "iopub.status.busy": "2026-11-10T11:02:37.156739Z",
+     "iopub.status.idle": "2026-11-10T11:02:37.344759Z",
+     "shell.execute_reply": "2026-11-10T11:02:37.344217Z"
     },
     "papermill": {
-     "duration": 0.189638,
-     "end_time": "2026-11-10T10:38:48.799110+00:00",
+     "duration": 0.191729,
+     "end_time": "2026-11-10T11:02:37.345182+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:48.609472+00:00",
+     "start_time": "2026-11-10T11:02:37.153453+00:00",
      "status": "completed"
     },
     "tags": []
@@ -1592,10 +1592,10 @@
    "id": "b1102b7c",
    "metadata": {
     "papermill": {
-     "duration": 0.003223,
-     "end_time": "2026-11-10T10:38:48.805954+00:00",
+     "duration": 0.002685,
+     "end_time": "2026-11-10T11:02:37.350943+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:48.802731+00:00",
+     "start_time": "2026-11-10T11:02:37.348258+00:00",
      "status": "completed"
     },
     "tags": []
@@ -1625,16 +1625,16 @@
    "id": "c9535fe9",
    "metadata": {
     "execution": {
-     "iopub.execute_input": "2026-11-10T10:38:48.812527Z",
-     "iopub.status.busy": "2026-11-10T10:38:48.812348Z",
-     "iopub.status.idle": "2026-11-10T10:38:48.816779Z",
-     "shell.execute_reply": "2026-11-10T10:38:48.816191Z"
+     "iopub.execute_input": "2026-11-10T11:02:37.357350Z",
+     "iopub.status.busy": "2026-11-10T11:02:37.357202Z",
+     "iopub.status.idle": "2026-11-10T11:02:37.361171Z",
+     "shell.execute_reply": "2026-11-10T11:02:37.360624Z"
     },
     "papermill": {
-     "duration": 0.008704,
-     "end_time": "2026-11-10T10:38:48.817496+00:00",
+     "duration": 0.008102,
+     "end_time": "2026-11-10T11:02:37.361658+00:00",
      "exception": false,
-     "start_time": "2026-11-10T10:38:48.808792+00:00",
+     "start_time": "2026-11-10T11:02:37.353556+00:00",
      "status": "completed"
     },
     "tags": []
@@ -1674,14 +1674,14 @@
   },
   "papermill": {
    "default_parameters": {},
-   "duration": 9.871352,
-   "end_time": "2026-11-10T10:38:49.135458+00:00",
+   "duration": 9.560505,
+   "end_time": "2026-11-10T11:02:37.678136+00:00",
    "environment_variables": {},
    "exception": null,
    "input_path": "/home/runner/work/KNMI_Data_Platform/KNMI_Data_Platform/docs/example_daily_in_situ_observations.ipynb",
    "output_path": "/home/runner/work/KNMI_Data_Platform/KNMI_Data_Platform/docs/example_daily_in_situ_observations.ipynb",
    "parameters": {},
-   "start_time": "2026-11-10T10:38:39.264106+00:00",
+   "start_time": "2026-11-10T11:02:28.117631+00:00",
    "version": "2.7.0"
   }
  },
