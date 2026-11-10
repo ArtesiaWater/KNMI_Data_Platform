@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Documentation &#8212; knmidata 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=51b770b3"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Daily weather observations from KNMI: Open Data API vs EDR API" href="example_daily_in_situ_observations.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Link to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">knmidata</span></code> is a lightweight Python client for the <a class="reference external" href="https://dataplatform.knmi.nl/">KNMI Data Platform</a> that fetches observational and gridded meteorological data directly into standard <code class="docutils literal notranslate"><span class="pre">xarray.Dataset</span></code> objects.</p>
+<p>Two APIs are supported:</p>
+<ul class="simple">
+<li><p><strong>Open Data API</strong> — bulk NetCDF file archives (e.g. radar composites, in-situ observations), downloaded and assembled into one <code class="docutils literal notranslate"><span class="pre">xarray.Dataset</span></code>.</p></li>
+<li><p><strong>EDR API</strong> — OGC EDR spatio-temporal queries (<code class="docutils literal notranslate"><span class="pre">/collections</span></code>, <code class="docutils literal notranslate"><span class="pre">/locations</span></code>, <code class="docutils literal notranslate"><span class="pre">/position</span></code>, <code class="docutils literal notranslate"><span class="pre">/area</span></code>, <code class="docutils literal notranslate"><span class="pre">/cube</span></code>); CoverageJSON/GeoJSON responses are parsed into in-memory <code class="docutils literal notranslate"><span class="pre">xarray.Dataset</span></code> objects.</p></li>
+</ul>
+<section id="authentication">
+<h2>Authentication<a class="headerlink" href="#authentication" title="Link to this heading">¶</a></h2>
+<p>All endpoints require an API key. Request a free key at <a class="reference external" href="https://developer.dataplatform.knmi.nl/">developer.dataplatform.knmi.nl</a>. KNMI issues a <strong>separate key per API</strong> — an Open Data key does not work for EDR and vice versa:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">KNMI_OPENDATA_API_KEY</span><span class="o">=</span><span class="s2">"&lt;your open data key&gt;"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">KNMI_EDR_API_KEY</span><span class="o">=</span><span class="s2">"&lt;your edr key&gt;"</span><span class="w">   </span><span class="c1"># EDR has no anonymous key</span>
+</pre></div>
+</div>
+<p>For Open Data only, you can omit the key entirely and the public anonymous key is used automatically (shared rate limit).</p>
+</section>
+<section id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="example_daily_in_situ_observations.html">Daily weather observations from KNMI: Open Data API vs EDR API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="example_daily_in_situ_observations.html#How-KNMI-data-is-organized">How KNMI data is organized</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_daily_in_situ_observations.html#The-two-APIs-at-a-glance">The two APIs at a glance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_daily_in_situ_observations.html#Authentication">Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_daily_in_situ_observations.html#Setup:-create-a-client">Setup: create a client</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_daily_in_situ_observations.html#1.-Open-Data-API-—-list-and-download-whole-files">1. Open Data API — list and download whole files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_daily_in_situ_observations.html#2.-EDR-API-—-query-instead-of-download">2. EDR API — query instead of download</a></li>
+<li class="toctree-l2"><a class="reference internal" href="example_daily_in_situ_observations.html#Open-Data-vs-EDR-—-what-did-we-just-see?">Open Data vs EDR — what did we just see?</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_api/modules.html">knmidata</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="_api/knmidata.html">knmidata package</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">knmidata</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="example_daily_in_situ_observations.html">Daily weather observations from KNMI: Open Data API vs EDR API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_api/modules.html">knmidata</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="example_daily_in_situ_observations.html" title="next chapter">Daily weather observations from KNMI: Open Data API vs EDR API</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Martin Vonk, Onno Ebbens, Ruben Caljé.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.2.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/index.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

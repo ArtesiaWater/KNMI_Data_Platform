@@ -1,0 +1,7 @@
+knmidata.edr.client module
+==========================
+
+.. automodule:: knmidata.edr.client
+   :members:
+   :show-inheritance:
+   :undoc-members:
