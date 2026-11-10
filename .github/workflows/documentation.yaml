@@ -3,6 +3,8 @@
 # Pages. Main branch builds are deployed to the site root and pull-request
 # builds are deployed to public preview URLs under /pr-<number>/.
 # Configure Pages to "Deploy from a branch" and use the gh-pages branch.
+# A root .nojekyll marker is required so assets in underscored paths (for
+# example _static/) are served for both main and PR preview pages.
 # API keys come from repository secrets (Settings > Secrets and variables >
 # Actions, e.g. KNMI_OPENDATA_API_KEY and KNMI_EDR_API_KEY); GitHub masks secret
 # values in logs and knmidata never prints them. On forks (no secrets) the
@@ -120,9 +122,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    environment:
-      name: pr-docs-preview
-      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}/
     steps:
       - uses: actions/checkout@v7
 
@@ -131,6 +130,18 @@ jobs:
         with:
           name: built-docs
           path: docs/_build/html
+
+      - name: Create root .nojekyll marker payload
+        run: |
+          mkdir -p .pages-root
+          touch .pages-root/.nojekyll
+
+      - name: Ensure root .nojekyll exists on gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: .pages-root
+          clean: false
 
       - name: Deploy PR docs preview
         uses: JamesIves/github-pages-deploy-action@v4
