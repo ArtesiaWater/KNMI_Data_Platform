@@ -1,7 +1,8 @@
 # Executes the example notebooks in docs/, builds the Sphinx documentation from
 # them (`tox -e docu`, see pyproject.toml) and deploys the result to GitHub
-# Pages. On pull requests the notebooks are executed and the docs are built,
-# but nothing is deployed.
+# Pages. Main branch builds are deployed to the site root and pull-request
+# builds are deployed to public preview URLs under /pr-<number>/.
+# Configure Pages to "Deploy from a branch" and use the gh-pages branch.
 # API keys come from repository secrets (Settings > Secrets and variables >
 # Actions, e.g. KNMI_OPENDATA_API_KEY and KNMI_EDR_API_KEY); GitHub masks secret
 # values in logs and knmidata never prints them. On forks (no secrets) the
@@ -75,27 +76,72 @@ jobs:
         run: |
           uv run tox -e docu --skip-pkg-install
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: docs/_build/html
+      - name: Add .nojekyll marker
+        run: |
+          touch docs/_build/html/.nojekyll
 
-  deploy:
-    # Deploy only from the default branch, not from pull requests.
-    if: github.event_name != 'pull_request'
+      - name: Upload built docs artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: built-docs
+          path: docs/_build/html
+          if-no-files-found: error
+
+  deploy-main:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pages: write
-      id-token: write
+      contents: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
     steps:
-      - name: Setup Pages
-        uses: actions/configure-pages@v6
+      - uses: actions/checkout@v7
 
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+      - name: Download built docs artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: built-docs
+          path: docs/_build/html
+
+      - name: Deploy docs to site root
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: docs/_build/html
+          clean: true
+          clean-exclude: |
+            pr-*
+
+  deploy-pr-preview:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    environment:
+      name: pr-docs-preview
+      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}/
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download built docs artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: built-docs
+          path: docs/_build/html
+
+      - name: Deploy PR docs preview
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages
+          folder: docs/_build/html
+          target-folder: pr-${{ github.event.pull_request.number }}
+          clean: true
+
+      - name: Add public PR docs URL to check summary
+        run: |
+          echo "## PR docs preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- [Open docs preview](https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/pr-${{ github.event.pull_request.number }}/)" >> "$GITHUB_STEP_SUMMARY"
