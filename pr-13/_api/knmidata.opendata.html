@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>knmidata.opendata package &#8212; knmidata 2.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=51b770b3"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="knmidata.opendata.client module" href="knmidata.opendata.client.html" />
+    <link rel="prev" title="knmidata.edr.parsers module" href="knmidata.edr.parsers.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="knmidata-opendata-package">
+<h1>knmidata.opendata package<a class="headerlink" href="#knmidata-opendata-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="knmidata.opendata.client.html">knmidata.opendata.client module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="knmidata.opendata.client.html#knmidata.opendata.client.AsyncOpenDataClient"><code class="docutils literal notranslate"><span class="pre">AsyncOpenDataClient</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="knmidata.opendata.parsers.html">knmidata.opendata.parsers module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="knmidata.opendata.parsers.html#knmidata.opendata.parsers.files_to_dataset"><code class="docutils literal notranslate"><span class="pre">files_to_dataset()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-knmidata.opendata">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-knmidata.opendata" title="Link to this heading">¶</a></h2>
+<p>KNMI Open Data API client components.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="knmidata.opendata.AsyncOpenDataClient">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">knmidata.opendata.</span></span><span class="sig-name descname"><span class="pre">AsyncOpenDataClient</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">transport</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="knmidata.html#knmidata.AsyncTransport" title="knmidata._http.AsyncTransport"><span class="pre">AsyncTransport</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">auth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Auth</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#knmidata.opendata.AsyncOpenDataClient" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Client for the KNMI Open Data API (file-based bulk downloads).</p>
+<p>Covers the whole Open Data workflow: <cite>list_files</cite> (catalog with cursor
+pagination and time filtering), <cite>get_download_url</cite> (presigned S3 URL per
+file), <cite>stream_file</cite>/<cite>download_files</cite> (atomic concurrent downloads to disk),
+<cite>open_dataset</cite> (open files already on disk into an <cite>xarray.Dataset</cite>), and
+<cite>get_dataset</cite> (list + download-if-missing + open in one call). Access it
+via <cite>client.opendata</cite>, or instantiate directly with your own transport/auth.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transport</strong> (<a class="reference internal" href="knmidata.html#knmidata.AsyncTransport" title="knmidata.AsyncTransport"><em>AsyncTransport</em></a>) – Shared HTTP transport and concurrency semaphore.</p></li>
+<li><p><strong>auth</strong> (<em>httpx.Auth</em>) – Authentication strategy for the Open Data gateway.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="knmidata.opendata.AsyncOpenDataClient.auth">
+<span class="sig-name descname"><span class="pre">auth</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Auth</span></span><a class="headerlink" href="#knmidata.opendata.AsyncOpenDataClient.auth" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="knmidata.opendata.AsyncOpenDataClient.download_files">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">download_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filenames</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Path</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#knmidata.opendata.AsyncOpenDataClient.download_files" title="Link to this definition">¶</a></dt>
+<dd><p>Download multiple files concurrently.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset_name</strong> (<em>str</em>) – Name of the KNMI dataset.</p></li>
+<li><p><strong>dataset_version</strong> (<em>str</em>) – Dataset version identifier.</p></li>
+<li><p><strong>filenames</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – List of filenames to download.</p></li>
+<li><p><strong>destination_dir</strong> (<em>PathLike</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Directory to save files into. Uses a temporary directory if None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Local paths of downloaded files, in the same order as <cite>filenames</cite>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[Path]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="knmidata.html#knmidata.KNMIError" title="knmidata.KNMIError"><strong>KNMIError</strong></a> – If one or more files could not be downloaded.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="knmidata.opendata.AsyncOpenDataClient.get_dataset">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Timestamp</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Timestamp</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cache_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'h5netcdf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">combine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'by_coords'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'nested'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'no_conflicts'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'by_coords'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">open_dataset_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#knmidata.opendata.AsyncOpenDataClient.get_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Get matching archive files via Open Data and assemble an xarray.Dataset.</p>
+<p>If <cite>cache_dir</cite> is given, files already on disk (matching the catalog size)
+are reused instead of re-downloaded, and the dataset is opened lazily from
+disk via <cite>open_dataset</cite>. If <cite>cache_dir</cite> is None, files are downloaded to a
+temporary directory, loaded into memory, and removed again.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset_name</strong> (<em>str</em>) – KNMI dataset name.</p></li>
+<li><p><strong>dataset_version</strong> (<em>str</em>) – Dataset version identifier.</p></li>
+<li><p><strong>start_time</strong> (<em>TimeLike</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Start timestamp (ISO-8601 string, pandas Timestamp, datetime, or
+date; naive values are assumed UTC).</p></li>
+<li><p><strong>end_time</strong> (<em>TimeLike</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – End timestamp (TimeLike, see start_time).</p></li>
+<li><p><strong>cache_dir</strong> (<em>PathLike</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Local folder to cache downloaded NetCDF/HDF5 files in. If None, files
+are downloaded to a temporary directory and loaded into memory.</p></li>
+<li><p><strong>file_pattern</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Optional regular expression to keep only matching file names.</p></li>
+<li><p><strong>max_files</strong> (<em>int</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Maximum number of files to download (after listing, ascending order).</p></li>
+<li><p><strong>engine</strong> (<em>str</em><em>, </em><em>default=&quot;h5netcdf&quot;</em>) – Xarray backend engine used to open each file (see <cite>files_to_dataset</cite>).</p></li>
+<li><p><strong>combine</strong> (<em>CombineMethod</em><em>, </em><em>default=&quot;by_coords&quot;</em>) – How to combine the per-file datasets (see <cite>files_to_dataset</cite>).</p></li>
+<li><p><strong>concat_dim</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Dimension to concatenate along when combine=’nested’.</p></li>
+<li><p><strong>**open_dataset_kwargs</strong> (<em>Any</em>) – Additional keyword arguments passed to <cite>xarray.open_dataset</cite> per file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Combined multidimensional dataset.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xr.Dataset</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="knmidata.html#knmidata.NoFilesFoundError" title="knmidata.NoFilesFoundError"><strong>NoFilesFoundError</strong></a> – If the query matches no files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="knmidata.opendata.AsyncOpenDataClient.get_download_url">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_download_url</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#knmidata.opendata.AsyncOpenDataClient.get_download_url" title="Link to this definition">¶</a></dt>
+<dd><p>Retrieve a temporary S3 presigned download URL for a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset_name</strong> (<em>str</em>) – Name of the KNMI dataset.</p></li>
+<li><p><strong>dataset_version</strong> (<em>str</em>) – Dataset version identifier.</p></li>
+<li><p><strong>filename</strong> (<em>str</em>) – File name inside the dataset.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Temporary presigned download URL.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="knmidata.opendata.AsyncOpenDataClient.list_files">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">list_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Timestamp</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Timestamp</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_keys</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sorting</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_by</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_files</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#knmidata.opendata.AsyncOpenDataClient.list_files" title="Link to this definition">¶</a></dt>
+<dd><p>Fetch matching file names from the catalog, handling pagination automatically.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset_name</strong> (<em>str</em>) – Name of the KNMI dataset (e.g., ‘rad_nl25_rac_mfbs_01h’).</p></li>
+<li><p><strong>dataset_version</strong> (<em>str</em>) – Dataset version identifier (e.g., ‘2.0’).</p></li>
+<li><p><strong>start_time</strong> (<em>TimeLike</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Start timestamp filter (ISO-8601 string, pandas Timestamp, datetime, or
+date; naive values are assumed UTC). Requires server-side ordering by
+modification time, so <cite>order_by</cite> defaults to ‘lastModified’ when a time
+filter is given.</p></li>
+<li><p><strong>end_time</strong> (<em>TimeLike</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – End timestamp filter.</p></li>
+<li><p><strong>max_keys</strong> (<em>int</em><em>, </em><em>default=1000</em>) – Number of keys to request per pagination batch. Clamped to the API
+maximum of 1000.</p></li>
+<li><p><strong>sorting</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – ‘asc’ or ‘desc’.</p></li>
+<li><p><strong>order_by</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Attribute to order/filter by: ‘filename’ (default), ‘lastModified’, or
+‘created’. Set to ‘lastModified’ (the default when <cite>start_time</cite> or
+<cite>end_time</cite> is given) to make <cite>begin</cite>/<cite>end</cite> act as ISO-8601 timestamps;
+with the default ‘filename’ ordering, <cite>begin</cite>/<cite>end</cite> are compared as
+filename strings instead.</p></li>
+<li><p><strong>file_pattern</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Optional regular expression applied client-side to keep only matching
+file names.</p></li>
+<li><p><strong>max_files</strong> (<em>int</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Stop paginating once this many matching files have been collected
+(after client-side pattern filtering).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of unique file names available for download.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="knmidata.opendata.AsyncOpenDataClient.open_dataset">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">open_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'h5netcdf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">combine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'by_coords'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'nested'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'no_conflicts'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'by_coords'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">open_dataset_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#knmidata.opendata.AsyncOpenDataClient.open_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Open already-downloaded files from disk into an xarray.Dataset (no network).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>source</strong> (<em>PathLike</em><em> | </em><em>FilePaths</em>) – A directory (all files in it, sorted by name — e.g. a <cite>cache_dir</cite>
+previously filled by <cite>get_dataset</cite>) or an explicit list of file paths.</p></li>
+<li><p><strong>engine</strong> (<em>str</em><em>, </em><em>default=&quot;h5netcdf&quot;</em>) – Xarray backend engine used to open each file (see <cite>files_to_dataset</cite>).</p></li>
+<li><p><strong>combine</strong> (<em>CombineMethod</em><em>, </em><em>default=&quot;by_coords&quot;</em>) – How to combine the per-file datasets (see <cite>files_to_dataset</cite>).</p></li>
+<li><p><strong>concat_dim</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Dimension to concatenate along when combine=’nested’.</p></li>
+<li><p><strong>**open_dataset_kwargs</strong> (<em>Any</em>) – Additional keyword arguments passed to <cite>xarray.open_dataset</cite> per file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Combined multidimensional dataset, opened lazily from disk.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xr.Dataset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="knmidata.opendata.AsyncOpenDataClient.stream_file">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">stream_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span></span></span><a class="headerlink" href="#knmidata.opendata.AsyncOpenDataClient.stream_file" title="Link to this definition">¶</a></dt>
+<dd><p>Stream download a file from a presigned URL in bounded memory.</p>
+<p>The file is written to a <code class="docutils literal notranslate"><span class="pre">.part</span></code> sibling and atomically moved into
+place, so an interrupted download is never mistaken for a complete file.
+Existing complete files are skipped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> (<em>str</em>) – Direct presigned download URL.</p></li>
+<li><p><strong>target_path</strong> (<em>Path</em>) – Destination path on local disk.</p></li>
+<li><p><strong>expected_size</strong> (<em>int</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Expected file size in bytes; used to validate the download and to
+decide whether an existing file can be skipped.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to the downloaded file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="knmidata.opendata.AsyncOpenDataClient.transport">
+<span class="sig-name descname"><span class="pre">transport</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="knmidata.html#knmidata.AsyncTransport" title="knmidata._http.AsyncTransport"><span class="pre">AsyncTransport</span></a></span><a class="headerlink" href="#knmidata.opendata.AsyncOpenDataClient.transport" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="knmidata.opendata.files_to_dataset">
+<span class="sig-prename descclassname"><span class="pre">knmidata.opendata.</span></span><span class="sig-name descname"><span class="pre">files_to_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_paths</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'h5netcdf'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">combine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Literal</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'by_coords'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'nested'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'no_conflicts'</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'by_coords'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concat_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">open_dataset_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dataset</span></span></span><a class="headerlink" href="#knmidata.opendata.files_to_dataset" title="Link to this definition">¶</a></dt>
+<dd><p>Assemble local NetCDF/HDF5 files into an xarray.Dataset.</p>
+<p>Implemented with <cite>xr.open_dataset</cite> + <cite>xr.combine_by_coords</cite> so that no dask
+installation is required.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_paths</strong> (<em>FilePaths</em>) – Paths to the downloaded NetCDF files.</p></li>
+<li><p><strong>engine</strong> (<em>str</em><em>, </em><em>default=&quot;h5netcdf&quot;</em>) – Xarray backend engine.</p></li>
+<li><p><strong>combine</strong> (<em>CombineMethod</em><em>, </em><em>default=&quot;by_coords&quot;</em>) – How to combine the per-file datasets: ‘by_coords’ (combine_by_coords),
+‘nested’ (concat along <cite>concat_dim</cite>), or ‘no_conflicts’ (merge).</p></li>
+<li><p><strong>concat_dim</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>default=None</em>) – Dimension to concatenate along when combine=’nested’.</p></li>
+<li><p><strong>**open_dataset_kwargs</strong> (<em>Any</em>) – Additional options forwarded to <cite>xr.open_dataset</cite>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Combined multidimensional dataset.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>xr.Dataset</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="knmidata.html#knmidata.KNMIError" title="knmidata.KNMIError"><strong>KNMIError</strong></a> – If <cite>file_paths</cite> is empty, or combine=’nested’ without <cite>concat_dim</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">knmidata</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../example_daily_in_situ_observations.html">Daily weather observations from KNMI: Open Data API vs EDR API</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">knmidata</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="knmidata.html">knmidata package</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">knmidata</a><ul>
+  <li><a href="knmidata.html">knmidata package</a><ul>
+      <li>Previous: <a href="knmidata.edr.parsers.html" title="previous chapter">knmidata.edr.parsers module</a></li>
+      <li>Next: <a href="knmidata.opendata.client.html" title="next chapter">knmidata.opendata.client module</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2026, Martin Vonk, Onno Ebbens, Ruben Caljé.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.2.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/_api/knmidata.opendata.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

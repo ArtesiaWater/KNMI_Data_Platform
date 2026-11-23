@@ -1,0 +1,7 @@
+knmidata.opendata.client module
+===============================
+
+.. automodule:: knmidata.opendata.client
+   :members:
+   :show-inheritance:
+   :undoc-members:
